@@ -179,5 +179,3 @@ Here’s a more detailed breakdown of **Development Environment Setup** and **Pr
        app.use(cors());
        ```
    - **Frontend:** Secure sensitive API requests by ensuring they only occur over HTTPS when deployed.
-
-By setting up both the development environment and architecture this way, the team will have a solid foundation to move forward efficiently. This structure also ensures that both frontend and backend development can proceed in parallel.
