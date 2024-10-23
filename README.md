@@ -11,5 +11,4 @@ Develop a comprehensive application that assists users in analyzing their diet, 
 5.	Weekly Diet Reports: Generate statistical reports of user's dietary habits
 
 ## Team Member
-
 Ritik Singh, Shi Gang, Yiwei Zhang, Nikunj Arvindbhai Gothadiya, Hitesh Naval, Naga Jyothi Dirisinala
