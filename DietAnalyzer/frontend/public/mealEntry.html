@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Meal Entry</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .meal-form {
+            margin-bottom: 20px;
+        }
+        .meal-info {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Log Your Meal</h1>
+    <form class="meal-form" id="mealForm">
+        <label for="mealName">Meal Name:</label>
+        <input type="text" id="mealName" name="mealName" required><br><br>
+
+        <label for="ingredients">Ingredients (comma-separated):</label>
+        <input type="text" id="ingredients" name="ingredients" required><br><br>
+
+        <label for="portionSize">Portion Size (grams):</label>
+        <input type="number" id="portionSize" name="portionSize" required><br><br>
+
+        <button type="submit">Log Meal</button>
+    </form>
+
+    <div class="meal-info" id="mealInfo"></div>
+
+    <!-- Link to the JS file -->
+    <script src="/pages/mealEntry.js"></script>
+</body>
+</html>
