@@ -3,7 +3,6 @@ import { app } from "./app.js";
 
 connectDB()
 .then(() => {
-
     try {
         app.on("error", (error)=>{
             console.log(error);
