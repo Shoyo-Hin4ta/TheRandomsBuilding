@@ -1,0 +1,88 @@
+name: DietAnalyzer CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+
+    env:
+      NODE_ENV: test
+      MONGODB_URI: mongodb://localhost:27017/dietanalyzer-test
+      JWT_SECRET: test-secret
+      ACCESS_TOKEN_SECRET: test-access-token
+      REFRESH_TOKEN_SECRET: test-refresh-token
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    # Backend CI
+    - name: Install Backend Dependencies
+      working-directory: ./backend
+      run: npm install
+
+    - name: Run Backend Tests with Coverage
+      working-directory: ./backend
+      run: npm test
+    
+    - name: Upload Backend Coverage
+      uses: actions/upload-artifact@v2
+      with:
+        name: backend-coverage
+        path: backend/coverage
+
+    # Frontend CI
+    - name: Install Frontend Dependencies
+      working-directory: ./frontend
+      run: npm install
+
+    - name: Build Frontend
+      working-directory: ./frontend
+      run: npm run build
+
+    - name: Run Frontend Tests with Coverage
+      working-directory: ./frontend
+      run: npm run test:coverage
+      
+    - name: Upload Frontend Coverage
+      uses: actions/upload-artifact@v2
+      with:
+        name: frontend-coverage
+        path: frontend/coverage
+
+    # Combined Coverage Report
+    - name: Upload Combined Coverage Reports
+      uses: actions/upload-artifact@v2
+      with:
+        name: coverage-reports
+        path: |
+          frontend/coverage
+          backend/coverage
+
+    # Add status check
+    - name: Check Test Coverage
+      run: |
+        echo "Frontend Coverage:"
+        cat frontend/coverage/coverage-summary.json | jq '.total.statements.pct'
+        echo "Backend Coverage:"
+        cat backend/coverage/coverage-summary.json | jq '.total.statements.pct'
