@@ -22,7 +22,7 @@ const SignUp = () => {
     setSuccess('');
 
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/users/signup`, formData);
+      await axios.post(`${process.env.REACT_APP_API_BASE_URL}/users/signup`, formData);
       setSuccess('Account created successfully! You can now sign in.');
       setFormData({ username: '', email: '', password: '', firstName: '', lastName: '' });
     } catch (error) {
@@ -41,7 +41,7 @@ const SignUp = () => {
           value={formData.username}
           onChange={handleChange}
           placeholder="Username"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
           required
         />
       </div>
@@ -52,7 +52,7 @@ const SignUp = () => {
           value={formData.email}
           onChange={handleChange}
           placeholder="Email"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
           required
         />
       </div>
@@ -63,7 +63,7 @@ const SignUp = () => {
           value={formData.password}
           onChange={handleChange}
           placeholder="Password"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
           required
         />
       </div>
@@ -74,7 +74,7 @@ const SignUp = () => {
           value={formData.firstName}
           onChange={handleChange}
           placeholder="First Name"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
         />
       </div>
       <div>
@@ -84,13 +84,10 @@ const SignUp = () => {
           value={formData.lastName}
           onChange={handleChange}
           placeholder="Last Name"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
         />
       </div>
-      <button 
-        type="submit" 
-        className="w-full px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-300"
-      >
+      <button type="submit" className="w-full px-4 py-2 text-white bg-green-600 rounded-md">
         Create Account
       </button>
     </form>
