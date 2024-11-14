@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import MealSizeSelector from '../MealComponents/MealSizeSelector';
 
-const ImageCapture = ({ mealType, onBack, onComplete }) => {
+const ImageCapture = ({ mealType, onBack, onComplete, isLoading }) => {
   const videoRef = useRef(null);
   const fileInputRef = useRef(null);
   const [stream, setStream] = useState(null);
@@ -64,11 +64,18 @@ const ImageCapture = ({ mealType, onBack, onComplete }) => {
   };
 
   const handleSubmit = () => {
+    if (!capturedImage || !size) {
+      setError('Please capture an image and select a size');
+      return;
+    }
+
     onComplete({
       mealType,
       size,
       name: name.trim() || `Meal ${Date.now()}`,
-      image: capturedImage
+      image: capturedImage,
+      entryType: 'image',
+      date: new Date()
     });
   };
 
@@ -86,6 +93,7 @@ const ImageCapture = ({ mealType, onBack, onComplete }) => {
       <Button 
         className="flex items-center justify-center gap-2"
         onClick={() => setCaptureMethod('camera')}
+        disabled={isLoading}
       >
         <Camera className="w-5 h-5" />
         Take Picture
@@ -97,6 +105,7 @@ const ImageCapture = ({ mealType, onBack, onComplete }) => {
           setCaptureMethod('gallery');
           fileInputRef.current?.click();
         }}
+        disabled={isLoading}
       >
         <ImageIcon className="w-5 h-5" />
         Choose from Gallery
@@ -107,6 +116,7 @@ const ImageCapture = ({ mealType, onBack, onComplete }) => {
         accept="image/*"
         className="hidden"
         onChange={handleFileSelect}
+        disabled={isLoading}
       />
     </div>
   );
@@ -119,6 +129,7 @@ const ImageCapture = ({ mealType, onBack, onComplete }) => {
             variant="ghost"
             size="icon"
             onClick={onBack}
+            disabled={isLoading}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -150,6 +161,7 @@ const ImageCapture = ({ mealType, onBack, onComplete }) => {
                 size="icon"
                 className="text-white hover:bg-white/20"
                 onClick={() => setCaptureMethod(null)}
+                disabled={isLoading}
               >
                 <X className="h-6 w-6" />
               </Button>
@@ -158,6 +170,7 @@ const ImageCapture = ({ mealType, onBack, onComplete }) => {
                 size="lg"
                 className="rounded-full bg-white text-black hover:bg-white/90"
                 onClick={captureImage}
+                disabled={isLoading}
               >
                 <Camera className="h-6 w-6" />
               </Button>
@@ -167,6 +180,7 @@ const ImageCapture = ({ mealType, onBack, onComplete }) => {
                 size="icon"
                 className="text-white hover:bg-white/20"
                 onClick={startCamera}
+                disabled={isLoading}
               >
                 <RotateCcw className="h-6 w-6" />
               </Button>
@@ -187,6 +201,7 @@ const ImageCapture = ({ mealType, onBack, onComplete }) => {
             <MealSizeSelector 
               value={size}
               onChange={setSize}
+              disabled={isLoading}
             />
             
             <div className="space-y-2">
@@ -197,6 +212,7 @@ const ImageCapture = ({ mealType, onBack, onComplete }) => {
                 placeholder="Enter meal name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                disabled={isLoading}
               />
             </div>
 
@@ -208,15 +224,16 @@ const ImageCapture = ({ mealType, onBack, onComplete }) => {
                   setCapturedImage(null);
                   setCaptureMethod(null);
                 }}
+                disabled={isLoading}
               >
                 Retake
               </Button>
               <Button
                 className="flex-1"
-                disabled={!size}
+                disabled={!size || isLoading}
                 onClick={handleSubmit}
               >
-                Save
+                {isLoading ? 'Saving...' : 'Save'}
               </Button>
             </div>
           </div>
