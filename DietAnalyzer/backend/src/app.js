@@ -30,6 +30,8 @@ app.use(cookieParser());
 import userRoutes from './routes/user.route.js'
 app.use('/api/users', userRoutes);
 
+import authRoutes from './routes/auth.route.js'
+app.use('/api/auth', authRoutes);
 
 
 import mealRouter from './routes/meal.route.js';

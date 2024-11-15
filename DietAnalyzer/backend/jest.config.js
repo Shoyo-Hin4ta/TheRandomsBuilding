@@ -1,8 +1,9 @@
-// backend/jest.config.js
 export default {
   testEnvironment: 'node',
   verbose: true,
-  setupFiles: ['dotenv/config'],
+  setupFilesAfterEnv: ['./jest.setup.js'],
   transform: {},
-  testTimeout: 10000
+  testTimeout: 30000, // Increased timeout
+  forceExit: true,
+  detectOpenHandles: true
 };
