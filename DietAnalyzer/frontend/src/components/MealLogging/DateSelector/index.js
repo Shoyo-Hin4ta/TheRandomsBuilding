@@ -20,7 +20,7 @@ const DateSelector = ({ selectedDate, onDateChange }) => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
+    <div className="fixed bottom-16 left-0 right-0 bg-white border-t shadow-lg p-4"> {/* Changed bottom-0 to bottom-16 */}
       <div className="max-w-md mx-auto flex items-center justify-between gap-2">
         <Button
           variant="ghost"

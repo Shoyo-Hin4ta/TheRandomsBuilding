@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import axios from 'axios';
+import { setUser, setError, setLoading } from '../store/slice/userSlice';
 
 const useAuthForm = (initialState, endpoint) => {
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState(initialState);
-  const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -17,37 +18,37 @@ const useAuthForm = (initialState, endpoint) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    dispatch(setError(null));
     setSuccess('');
-    setIsLoading(true);
+    dispatch(setLoading(true));
 
     try {
       const response = await axios.post(
         `${process.env.REACT_APP_API_BASE_URL}${endpoint}`,
         formData,
-        { withCredentials: endpoint === '/users/signin' }
+        { withCredentials: true } // Always send credentials for cookie handling
       );
-      
-      setSuccess(
-        endpoint === '/users/signin'
-          ? 'Signed in successfully!'
-          : 'Account created successfully! You can now sign in.'
-      );
+
+      if (endpoint === '/users/signin') {
+        dispatch(setUser(response.data.data.user));
+        setSuccess('Signed in successfully!');
+      } else {
+        setSuccess('Account created successfully! You can now sign in.');
+      }
 
       return response.data;
     } catch (error) {
-      setError(error.response?.data?.message || 'An error occurred. Please try again.');
+      const errorMessage = error.response?.data?.message || 'An error occurred. Please try again.';
+      dispatch(setError(errorMessage));
       throw error;
     } finally {
-      setIsLoading(false);
+      dispatch(setLoading(false));
     }
   };
 
   return {
     formData,
-    error,
     success,
-    isLoading,
     handleChange,
     handleSubmit
   };
