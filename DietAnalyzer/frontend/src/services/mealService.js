@@ -6,7 +6,6 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 const dataURLtoFile = (dataurl, filename) => {
     if (!dataurl) return null;
     
-    // Extract base64 data and content type
     const arr = dataurl.split(',');
     if (arr.length < 2) return null;
     
@@ -41,7 +40,6 @@ export const mealService = {
                     .filter(([_, value]) => value && value.id)
                     .map(([_, item]) => ({
                         name: item.name,
-                        // Handle both measurement formats
                         measurement: item.customMeasurement 
                             ? { 
                                 isCustom: true, 
@@ -60,7 +58,6 @@ export const mealService = {
             
             // Add all other fields
             Object.entries(mealData).forEach(([key, value]) => {
-                // Skip ingredients objects and image
                 if (!value?.id && key !== 'image') {
                     if (value instanceof Date) {
                         formData.append(key, value.toISOString());
@@ -74,11 +71,12 @@ export const mealService = {
 
             const response = await axios.post(`${API_BASE_URL}/meals`, formData, {
                 headers: {
-                    'Content-Type': 'multipart/form-data',
-                }
+                    'Content-Type': 'multipart/form-data'
+                },
+                withCredentials: true
             });
 
-            return response.data;
+            return response.data.data;
         } catch (error) {
             console.error('Error adding meal:', error.response?.data || error.message);
             throw error;
@@ -88,8 +86,10 @@ export const mealService = {
     async getMealsByDate(date) {
         try {
             const formattedDate = date.toISOString().split('T')[0];
-            const response = await axios.get(`${API_BASE_URL}/meals/date/${formattedDate}`);
-            return response.data;
+            const response = await axios.get(`${API_BASE_URL}/meals/date/${formattedDate}`, {
+                withCredentials: true
+            });
+            return response.data.data;
         } catch (error) {
             console.error('Error getting meals:', error.response?.data || error.message);
             throw error;

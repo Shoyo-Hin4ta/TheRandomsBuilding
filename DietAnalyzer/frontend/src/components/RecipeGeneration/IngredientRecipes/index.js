@@ -4,9 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import IngredientList from './IngredientList';
 import RecipeCard from '../DietaryRecipes/RecipeCard';
-import api from '@/utils/axios';
+// import api from '@/utils/axios';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const IngredientRecipes = () => {
     const [ingredients, setIngredients] = useState([]);
@@ -50,30 +54,36 @@ const IngredientRecipes = () => {
     setLoading(true);
 
     try {
-      const formData = {
-        type: 'ingredients',
-        preferences: {
-          ingredients
-        }
-      };
+        const formData = {
+            type: 'ingredients',
+            preferences: {
+                ingredients
+            }
+        };
 
-      const response = await api.post('/recipes/generate', formData);
-      setRecipes(response.recipes);
-      toast({
-        title: "Success",
-        description: "Recipes generated successfully",
-      });
+        const response = await axios.post(`${API_BASE_URL}/recipes/generate`, formData, {
+            withCredentials: true,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        setRecipes(response.data.recipes);
+        toast({
+            title: "Success",
+            description: "Recipes generated successfully",
+        });
     } catch (err) {
-      toast({
-        title: "Error",
-        description: err.message,
-        variant: "destructive",
-      });
-      console.error('Error:', err);
+        toast({
+            title: "Error",
+            description: err.response?.data?.message || err.message,
+            variant: "destructive",
+        });
+        console.error('Error:', err);
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
 
   return (
     <div className="max-w-2xl mx-auto p-6">

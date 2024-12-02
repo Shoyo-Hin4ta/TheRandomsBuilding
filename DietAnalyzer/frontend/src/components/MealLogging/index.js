@@ -40,18 +40,18 @@ const MealLogging = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchMeals = async () => {
-      try {
-        const response = await mealService.getMealsByDate(selectedDate);
-        setMeals(response.data.data);
-      } catch (err) {
-        console.error('Error fetching meals:', err);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchMeals = async () => {
+  //     try {
+  //       const response = await mealService.getMealsByDate(selectedDate);
+  //       setMeals(response.data.data);
+  //     } catch (err) {
+  //       console.error('Error fetching meals:', err);
+  //     }
+  //   };
     
-    fetchMeals();
-  }, [selectedDate]);
+  //   fetchMeals();
+  // }, [selectedDate]);
 
 
   

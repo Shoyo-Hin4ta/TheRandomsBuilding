@@ -5,12 +5,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import RecipeCard from './RecipeCard';
-import api from '@/utils/axios';
+// import api from '@/utils/axios';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const DietaryRecipes = () => {
+
   const [selectedDietary, setSelectedDietary] = useState([]);
   const [healthCondition, setHealthCondition] = useState('');
   const [activityLevel, setActivityLevel] = useState('');
@@ -58,8 +61,14 @@ const DietaryRecipes = () => {
         }
       };
 
-      const response = await api.post('/recipes/generate', formData);
-      setRecipes(response.recipes);
+      const response = await axios.post(`${API_BASE_URL}/recipes/generate`, formData, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      setRecipes(response.data.recipes);
       toast({
         title: "Success",
         description: "Recipes generated successfully",
@@ -67,7 +76,7 @@ const DietaryRecipes = () => {
     } catch (err) {
       toast({
         title: "Error",
-        description: err.message,
+        description: err.response?.data?.message || err.message,
         variant: "destructive",
       });
       console.error('Error:', err);
@@ -75,6 +84,7 @@ const DietaryRecipes = () => {
       setLoading(false);
     }
   };
+
 
 
   return (

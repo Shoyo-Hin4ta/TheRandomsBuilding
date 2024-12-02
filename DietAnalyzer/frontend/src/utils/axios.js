@@ -5,6 +5,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
 
 // Response interceptor to extract data
@@ -13,6 +14,7 @@ api.interceptors.response.use(
     if (response.data.data) {
       return response.data.data;
     }
+    console.log(response)
     return response;
   },
   (error) => {
