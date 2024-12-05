@@ -3,7 +3,6 @@ import { useSelector } from 'react-redux';
 import axios from 'axios';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { X } from 'lucide-react';
 import DateSelector from '../MealLogging/DateSelector';
 import { selectCurrentUser } from '@/store/slice/userSlice';
 import { Alert, AlertDescription } from '@/components/ui/alert';

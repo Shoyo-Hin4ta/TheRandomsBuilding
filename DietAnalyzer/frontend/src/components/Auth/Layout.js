@@ -62,13 +62,13 @@ const AuthLayout = ({ children }) => {
                 <ChevronDown className="h-4 w-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem 
+                {/* <DropdownMenuItem 
                   onClick={() => navigate('/profile')}
                   className="hover:bg-emerald-50"
                 >
                   <User className="h-4 w-4 mr-2 text-emerald-600" />
                   Edit Profile
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
                 <DropdownMenuItem 
                   onClick={handleLogout}
                   className="hover:bg-red-50 text-red-600"
@@ -90,7 +90,7 @@ const AuthLayout = ({ children }) => {
       {/* Navigation Menu at the bottom */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-lg">
         <nav className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-around h-16 items-center">
+          <div className="grid grid-cols-4 h-16 items-center w-full">
             {menu.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -98,7 +98,7 @@ const AuthLayout = ({ children }) => {
                 <button
                   key={item.path}
                   onClick={() => navigate(item.path)}
-                  className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors
+                  className={`flex flex-col items-center justify-center w-full gap-1 py-2 rounded-lg transition-colors
                     ${isActive 
                       ? 'text-emerald-600 bg-emerald-50' 
                       : 'text-gray-500 hover:text-emerald-600 hover:bg-emerald-50'
