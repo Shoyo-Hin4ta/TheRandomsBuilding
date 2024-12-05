@@ -1,9 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from './pages/HomePage';
-import RecipeGeneration from './components/RecipeGeneration';
-import DietaryRecipes from './components/RecipeGeneration/DietaryRecipes';
-import IngredientRecipes from './components/RecipeGeneration/IngredientRecipes';
+import RecipeGeneration from '@/components/RecipeGeneration/index';
 import AllRecipes from './components/RecipeGeneration/AllRecipes';
 import { Provider, useSelector } from 'react-redux';
 import appStore from './store/appStore';
@@ -11,6 +9,7 @@ import SignIn from './components/Auth/SignIn';
 import MealLogging from '@/components/MealLogging';
 import AuthLayout from './components/Auth/Layout';
 import Dashboard from './components/Dashboard';
+import RecipeForm from './components/RecipeGeneration/RecipeForm';
 
 const ConditionalRoute = ({ children }) => {
   const isAuthenticated = useSelector(state => state.user.isAuthenticated);
@@ -43,7 +42,6 @@ function App() {
               <HomePage />
             </ConditionalRoute>
           } />
-          
           <Route path="/signin" element={
             <Navigate to="/" state={{ scrollToSignIn: true }} />
           } />          
@@ -66,15 +64,10 @@ function App() {
             </ProtectedRoute>
           } />
           
-          <Route path="/dietary-recipes" element={
-            <ProtectedRoute>
-              <DietaryRecipes />
-            </ProtectedRoute>
-          } />
           
-          <Route path="/ingredient-recipes" element={
+          <Route path="/recipe-form" element={
             <ProtectedRoute>
-              <IngredientRecipes />
+              <RecipeForm />
             </ProtectedRoute>
           } />
           

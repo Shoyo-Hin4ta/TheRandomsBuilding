@@ -1,13 +1,17 @@
 import express from 'express';
-import { generateRecipes, getAllRecipes, getRecipeById } from '../controllers/recipe.controller.js';
+import { generateRecipes, getUserRecipes, getRecipeById } from '../controllers/recipe.controller.js';
+import { verifyJWT } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
-// Generate new recipes based on preferences or ingredients
+router.use(verifyJWT);
+
+
+// Generate new recipes based on preferences and/or ingredients
 router.post('/generate', generateRecipes);
 
-// Get all recipes for the default user
-router.get('/all', getAllRecipes);
+// Get all recipes
+router.get('/all', getUserRecipes);
 
 // Get a specific recipe by ID
 router.get('/:id', getRecipeById);

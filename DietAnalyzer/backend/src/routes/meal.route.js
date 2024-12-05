@@ -6,8 +6,13 @@ import {
   deleteMeal
 } from '../controllers/meal.controller.js';
 import { upload } from '../middlewares/multer.middleware.js';
+import { verifyJWT } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
+
+
+router.use(verifyJWT);
+
 
 // Routes without auth middleware
 router.post('/', upload.single('image'), addMeal);

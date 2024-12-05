@@ -14,6 +14,9 @@ const useAuthForm = (initialState, endpoint) => {
       ...prev,
       [name]: value
     }));
+    if (dispatch) {
+      dispatch(setError(null));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -26,21 +29,21 @@ const useAuthForm = (initialState, endpoint) => {
       const response = await axios.post(
         `${process.env.REACT_APP_API_BASE_URL}${endpoint}`,
         formData,
-        { withCredentials: true } // Always send credentials for cookie handling
+        { withCredentials: true }
       );
 
       if (endpoint === '/users/signin') {
         dispatch(setUser(response.data.data.user));
-        setSuccess('Signed in successfully!');
+        setSuccess('Sign in successful! Redirecting...');
       } else {
-        setSuccess('Account created successfully! You can now sign in.');
+        setSuccess(response.data.message || 'Account created successfully! You can now sign in.');
       }
 
+      setFormData(initialState);
       return response.data;
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'An error occurred. Please try again.';
+      const errorMessage = error.response?.data?.message || 'Something went wrong. Please try again.';
       dispatch(setError(errorMessage));
-      throw error;
     } finally {
       dispatch(setLoading(false));
     }

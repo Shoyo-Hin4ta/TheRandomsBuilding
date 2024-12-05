@@ -10,15 +10,29 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
+
+const base64ToFile = async (base64String, filename) => {
+  // Remove data:image/jpeg;base64, prefix if present
+  const base64Data = base64String.replace(/^data:image\/\w+;base64,/, '');
+  
+  // Create buffer from base64
+  const buffer = Buffer.from(base64Data, 'base64');
+  
+  // Create temporary file path
+  const tempPath = `./temp/${filename}`;
+  
+  // Ensure temp directory exists
+  await fs.mkdir('./temp', { recursive: true }).catch(console.error);
+  
+  // Write buffer to file
+  await fs.writeFile(tempPath, buffer);
+  
+  return tempPath;
+};
+
 const analyzeWithGPT = async (imagePath, size = 'M') => {
   try {
-    // Verify the image exists
-    await fs.access(imagePath);
-    
-    // Read the image file
     const imageBuffer = await fs.readFile(imagePath);
-    
-    // Ensure the content type is correctly set
     const contentType = 'image/jpeg';
     const base64Image = Buffer.from(imageBuffer).toString('base64');
     const dataUrl = `data:${contentType};base64,${base64Image}`;
@@ -30,20 +44,15 @@ const analyzeWithGPT = async (imagePath, size = 'M') => {
       model: "gpt-4o",
       messages: [
         {
+          role: "system",
+          content: "You analyze food images and provide nutritional information in JSON format."
+        },
+        {
           role: "user",
           content: [
             { 
               type: "text", 
-              text: `Analyze this meal image and respond ONLY with a JSON object (no additional text) in this format:
-              {
-                "calories": number,
-                "protein": number,
-                "carbohydrates": number,
-                "fat": number,
-                "macroNutrientFacts": "string"
-              }
-              
-              Consider this is a ${size} sized portion where:
+              text: `Analyze this meal image and provide nutritional information. Consider this is a ${size} sized portion where:
               XS = Half of a regular portion
               S = 75% of a regular portion
               M = Regular portion
@@ -60,18 +69,69 @@ const analyzeWithGPT = async (imagePath, size = 'M') => {
           ],
         }
       ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "meal_nutrition_schema",
+          schema: {
+            type: "object",
+            properties: {
+              calories: {
+                type: "number",
+                description: "Total calories in the meal"
+              },
+              protein: {
+                type: "number",
+                description: "Protein content in grams"
+              },
+              carbohydrates: {
+                type: "number",
+                description: "Carbohydrate content in grams"
+              },
+              fat: {
+                type: "number",
+                description: "Fat content in grams"
+              },
+              macroNutrientFacts: {
+                type: "string",
+                description: "Description of the meal's macro nutrient composition"
+              }
+            },
+            required: ["calories", "protein", "carbohydrates", "fat", "macroNutrientFacts"],
+            additionalProperties: false
+          }
+        }
+      },
       max_tokens: 1000,
     });
 
     const content = response.choices[0].message.content;
-    return validateAndParseJSON(content);
+    let parsedContent;
+
+    try {
+      parsedContent = JSON.parse(content);
+    } catch (error) {
+      console.log("Failed to parse GPT response, using zero values");
+      parsedContent = {
+        calories: 0,
+        protein: 0,
+        carbohydrates: 0,
+        fat: 0,
+        macroNutrientFacts: "Meal Analysis failed. Please try uploading the image again or enter meal details manually."
+      };
+    }
+
+    return parsedContent;
+
   } catch (error) {
     console.error("GPT Vision Analysis Error:", error);
-    // Add more detailed error information
-    if (error.error?.code === 'invalid_image_format') {
-      throw new ApiError(400, "Invalid image format. Please upload a JPEG, PNG, GIF, or WebP image.");
-    }
-    throw new ApiError(500, "Failed to analyze meal image: " + error.message);
+    return {
+      calories: 0,
+      protein: 0,
+      carbohydrates: 0,
+      fat: 0,
+      macroNutrientFacts: "Meal Analysis failed. Please try uploading the image again or enter meal details manually."
+    };
   }
 };
 
@@ -82,40 +142,66 @@ const analyzeTextWithGPT = async (content, size = 'M') => {
       messages: [
         {
           role: "system",
-          content: "You are a nutritional analysis AI. Always respond with valid JSON objects containing nutritional information. Never include any additional text or explanations."
+          content: "You analyze meals and provide nutritional information in JSON format."
         },
         {
           role: "user",
-          content: `Respond ONLY with a JSON object (no additional text) in this format:
-          {
-            "calories": number,
-            "protein": number,
-            "carbohydrates": number,
-            "fat": number,
-            "macroNutrientFacts": "string"
-          }
-
-          Analyze this meal: ${content}
-          
-          Consider portion size adjustments:
+          content: `Analyze this meal and provide nutritional information: ${content}. 
+          Consider portion size adjustments where:
           XS = 50% of regular portion
           S = 75% of regular portion
           M = 100% (regular portion)
           L = 150% of regular portion
           XL = 200% of regular portion
-
           Current size: ${size}`
         }
       ],
-      temperature: 0.7,
-      max_tokens: 500,
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "meal_nutrition_schema",
+          schema: {
+            type: "object",
+            properties: {
+              calories: {
+                type: "number",
+                description: "Total calories in the meal"
+              },
+              protein: {
+                type: "number",
+                description: "Protein content in grams"
+              },
+              carbohydrates: {
+                type: "number",
+                description: "Carbohydrate content in grams"
+              },
+              fat: {
+                type: "number",
+                description: "Fat content in grams"
+              },
+              macroNutrientFacts: {
+                type: "string",
+                description: "Description of the meal's macro nutrient composition"
+              }
+            },
+            required: ["calories", "protein", "carbohydrates", "fat", "macroNutrientFacts"],
+            additionalProperties: false
+          }
+        }
+      },
+      max_tokens: 1000
     });
 
-    const result = response.choices[0].message.content;
-    return validateAndParseJSON(result);
+    return JSON.parse(response.choices[0].message.content);
   } catch (error) {
     console.error("GPT Text Analysis Error:", error);
-    throw new ApiError(500, "Failed to analyze meal description");
+    return {
+      calories: 0,
+      protein: 0,
+      carbohydrates: 0,
+      fat: 0,
+      macroNutrientFacts: "Analysis failed. Please try again with more details."
+    };
   }
 };
 
@@ -148,87 +234,131 @@ const validateAndParseJSON = (content) => {
   }
 };
 
+const generateMealName = async (mealType, userId, date, existingMeals = null) => {
+  try {
+    const normalizedType = mealType || 'Custom';
+    const capitalizedType = normalizedType.charAt(0).toUpperCase() + normalizedType.slice(1).toLowerCase();
+    
+    if (!existingMeals) {
+      const today = new Date(date);
+      today.setUTCHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      existingMeals = await Meal.find({
+        user: userId,
+        date: {
+          $gte: today,
+          $lt: tomorrow
+        }
+      });
+    }
+    
+    let counter = 1;
+    let proposedName;
+    
+    do {
+      proposedName = `${capitalizedType} ${counter}`;
+      counter++;
+    } while (existingMeals.some(meal => meal.name === proposedName));
+    
+    return proposedName;
+  } catch (error) {
+    console.error('Error generating meal name:', error);
+    throw new ApiError(500, "Failed to generate meal name");
+  }
+};
+
 export const addMeal = async (req, res) => {
   try {
     const { body } = req;
-    let mealData = {};
+    console.log("1. Received request body:", body);
 
-    console.log("Request file:", req.file); // For debugging
-    console.log("Request body:", body);     // For debugging
+    // Get existing meals for the day
+    const today = new Date(body.date);
+    today.setUTCHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Handle image-based meal entry
-    if (req.file) {
+    const existingMeals = await Meal.find({
+      user: req.user._id,
+      date: {
+        $gte: today,
+        $lt: tomorrow
+      }
+    });
+
+    const mealName = body.name || await generateMealName(
+      body.mealType,
+      req.user._id,
+      body.date,
+      existingMeals
+    );
+
+    let mealData = {
+      user: req.user._id,
+      date: new Date(body.date),
+      name: mealName,
+      mealType: body.mealType,
+      size: body.size || 'M'
+    };
+
+    // Handle ingredients case
+    if (body.ingredients) {
       try {
-        console.log(req.file);
-        const analysis = await analyzeWithGPT(req.file.path, body.size || 'M');
+        const ingredients = JSON.parse(body.ingredients);
+        
+        const ingredientDescription = ingredients
+          .map(ing => {
+            const measurement = ing.measurement;
+            if (measurement.isCustom) {
+              return `${ing.name} (${measurement.value})`;
+            }
+            return `${ing.name} (${measurement.value} ${measurement.unit})`;
+          })
+          .join(', ');
 
+        const analysis = await analyzeTextWithGPT(ingredientDescription, body.size || 'M');
+        
         mealData = {
-          date: new Date(body.date),
-          mealType: body.mealType,
-          entryType: 'image',
-          name: body.name,
-          size: body.size || 'M',
+          ...mealData,
+          entryType: 'ingredients',
+          ingredients: ingredients,
           nutritionInfo: analysis
         };
-
-        // Clean up the temp file
-        await fs.unlink(req.file.path).catch(console.error);
       } catch (error) {
-        // Clean up temp file if exists
-        if (req.file?.path) {
-          await fs.unlink(req.file.path).catch(console.error);
-        }
-        throw error;
+        console.error('Ingredients processing error:', error);
+        throw new ApiError(400, "Invalid ingredients format");
       }
     }
-    else if (body.description) {
-      const analysis = await analyzeTextWithGPT(body.description, body.size);
+    // Handle image case
+    else if (body.image) {
+      const tempFilePath = await base64ToFile(body.image, `meal-${Date.now()}.jpg`);
+      const analysis = await analyzeWithGPT(tempFilePath, body.size || 'M');
+      
       mealData = {
-        date: new Date(body.date),
-        mealType: body.mealType,
+        ...mealData,
+        entryType: 'image',
+        nutritionInfo: analysis
+      };
+
+      await fs.unlink(tempFilePath).catch(console.error);
+    }
+    // Handle description case
+    else if (body.description) {
+      const analysis = await analyzeTextWithGPT(body.description, body.size || 'M');
+      mealData = {
+        ...mealData,
         entryType: 'complete',
-        name: body.name,
-        size: body.size,
         description: body.description,
         nutritionInfo: analysis
       };
     }
-    // Handle ingredients-based meal entry
-    else if (body.ingredients) {
-      let ingredients;
-      try {
-        ingredients = JSON.parse(body.ingredients);
-      } catch (error) {
-        throw new ApiError(400, "Invalid ingredients format");
-      }
-    
-      // Create a detailed description for GPT analysis
-      const ingredientDescription = ingredients
-        .map(ing => {
-          if (ing.measurement.isCustom) {
-            return `${ing.name} (${ing.measurement.value})`;
-          } else {
-            return `${ing.name} (${ing.measurement.value} ${ing.measurement.unit})`;
-          }
-        })
-        .join(', ');
-    
-      const analysis = await analyzeTextWithGPT(
-        `Analyze nutrition for these ingredients: ${ingredientDescription}`,
-        body.size || 'M'
-      );
-    
-      mealData = {
-        date: new Date(body.date),
-        mealType: body.mealType || 'snack',
-        entryType: 'ingredients',
-        name: `Custom Meal`,
-        ingredients: ingredients,
-        size: body.size || 'M',
-        nutritionInfo: analysis
-      };
+    else {
+      throw new ApiError(400, "Please provide image, description, or ingredients");
     }
 
+    console.log("3. Final mealData before DB save:", mealData);
     const meal = await Meal.create(mealData);
 
     return res.status(201).json(
@@ -237,6 +367,9 @@ export const addMeal = async (req, res) => {
 
   } catch (error) {
     console.error("Add Meal Error:", error);
+    if (error.name === 'ValidationError') {
+      console.error("Validation error details:", error.errors);
+    }
     throw new ApiError(error?.statusCode || 500, error?.message || "Failed to log meal");
   }
 };
@@ -244,25 +377,40 @@ export const addMeal = async (req, res) => {
 export const getMealsByDate = async (req, res) => {
   try {
     const { date } = req.params;
+    
+    if (!date) {
+      throw new ApiError(400, "Date parameter is required");
+    }
+
+    // Create date objects for start and end of the day in UTC
     const startDate = new Date(date);
-    startDate.setHours(0, 0, 0, 0);
+    startDate.setUTCHours(0, 0, 0, 0);
     
     const endDate = new Date(date);
-    endDate.setHours(23, 59, 59, 999);
+    endDate.setUTCHours(23, 59, 59, 999);
+
+    console.log('Querying meals between:', startDate, 'and', endDate); // Debug log
 
     const meals = await Meal.find({
+      user: req.user._id,
       date: {
         $gte: startDate,
         $lte: endDate
       }
     }).sort({ mealType: 1 });
 
+    console.log('Found meals:', meals); // Debug log
+
     return res.status(200).json(
       new ApiResponse(200, meals, "Meals retrieved successfully")
     );
 
   } catch (error) {
-    throw new ApiError(500, "Failed to fetch meals");
+    console.error("Get Meals Error:", error);
+    throw new ApiError(
+      error?.statusCode || 500, 
+      error?.message || "Failed to fetch meals"
+    );
   }
 };
 
@@ -270,34 +418,60 @@ export const updateMeal = async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
-    
-    const meal = await Meal.findByIdAndUpdate(
-      id,
-      updates,
-      { new: true, runValidators: true }
-    );
 
-    if (!meal) {
-      throw new ApiError(404, "Meal not found");
+    if (!id) {
+      throw new ApiError(400, "Meal ID is required");
     }
 
+    // Check if meal exists and belongs to user
+    const existingMeal = await Meal.findOne({
+      _id: id,
+      user: req.user._id
+    });
+
+    if (!existingMeal) {
+      throw new ApiError(404, "Meal not found or unauthorized");
+    }
+
+    // Include user ID in updates to prevent it from being overwritten
+    const updatedMeal = await Meal.findByIdAndUpdate(
+      id,
+      { ...updates, user: req.user._id }, // Ensure user field is preserved
+      { 
+        new: true, 
+        runValidators: true 
+      }
+    );
+
     return res.status(200).json(
-      new ApiResponse(200, meal, "Meal updated successfully")
+      new ApiResponse(200, updatedMeal, "Meal updated successfully")
     );
 
   } catch (error) {
-    throw new ApiError(error?.statusCode || 500, error?.message || "Failed to update meal");
+    console.error("Update Meal Error:", error);
+    throw new ApiError(
+      error?.statusCode || 500, 
+      error?.message || "Failed to update meal"
+    );
   }
 };
 
 export const deleteMeal = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    const meal = await Meal.findByIdAndDelete(id);
 
-    if (!meal) {
-      throw new ApiError(404, "Meal not found");
+    if (!id) {
+      throw new ApiError(400, "Meal ID is required");
+    }
+    
+    // Find and delete in one operation, ensuring user ownership
+    const deletedMeal = await Meal.findOneAndDelete({
+      _id: id,
+      user: req.user._id
+    });
+
+    if (!deletedMeal) {
+      throw new ApiError(404, "Meal not found or unauthorized");
     }
 
     return res.status(200).json(
@@ -305,6 +479,10 @@ export const deleteMeal = async (req, res) => {
     );
 
   } catch (error) {
-    throw new ApiError(error?.statusCode || 500, error?.message || "Failed to delete meal");
+    console.error("Delete Meal Error:", error);
+    throw new ApiError(
+      error?.statusCode || 500, 
+      error?.message || "Failed to delete meal"
+    );
   }
 };

@@ -85,4 +85,4 @@ jobs:
         echo "Frontend Coverage:"
         cat frontend/coverage/coverage-summary.json | jq '.total.statements.pct'
         echo "Backend Coverage:"
-        cat backend/coverage/coverage-summary.json | jq '.total.statements.pct'
+        cat backend/cﬁoverage/coverage-summary.json | jq '.total.statements.pct'

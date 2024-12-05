@@ -4,32 +4,46 @@ const recipeSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        default: '655310520a61c845a2906e19'
+        required: true
     },
     recipes: [{
         name: {
             type: String,
-            required: true
+            required: true,
+            trim: true
         },
         directions: {
             type: String,
-            required: true
+            required: true,
+            trim: true
+        },
+        additionalIngredients: {
+            type: [String],
+            default: []
         }
     }],
-    generationType: {
-        type: String,
-        enum: ['dietary', 'ingredients'],
-        required: true
-    },
     preferences: {
-        dietaryNeeds: [String],
-        healthCondition: String,
-        activityLevel: String,
-        ingredients: [String]
+        dietaryNeeds: {
+            type: [String],
+            default: []
+        },
+        healthCondition: {
+            type: String,
+            default: ''
+        },
+        activityLevel: {
+            type: String,
+            default: ''
+        },
+        ingredients: {
+            type: [String],
+            default: []
+        }
     }
-    }, {
-        timestamps: true
-    });
+}, {
+    timestamps: true,
+    strict: true
+});
 
 const Recipe = mongoose.model('Recipe', recipeSchema);
 

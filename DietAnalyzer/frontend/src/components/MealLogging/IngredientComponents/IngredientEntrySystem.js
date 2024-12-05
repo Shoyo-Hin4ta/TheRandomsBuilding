@@ -24,22 +24,52 @@ const IngredientEntrySystem = ({ mealType, onBack, onComplete }) => {
     setIngredients(ingredients.filter(ing => ing.id !== id));
   };
 
+  const handleComplete = () => {
+    // Transform ingredients to match backend schema
+    const formattedIngredients = ingredients.map((ing, index) => {
+      if (ing.customMeasurement) {
+        return {
+          name: ing.name,
+          measurement: {
+            isCustom: true,
+            value: ing.customMeasurement,
+            unit: 'custom'
+          }
+        };
+      }
+      return {
+        name: ing.name,
+        measurement: {
+          isCustom: false,
+          value: ing.amount,
+          unit: ing.unit
+        }
+      };
+    });
+
+    onComplete({
+      ingredients: formattedIngredients,
+      mealType
+    });
+  };
+
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-2">
+    <Card className="bg-white/90 backdrop-blur-sm border-emerald-100 shadow-lg">
+      <CardHeader className="pb-3 border-b border-emerald-100">
+        <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={onBack}
+            className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors duration-200"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <CardTitle>Enter Ingredients</CardTitle>
+          <CardTitle className="text-emerald-800 text-xl">Enter Ingredients</CardTitle>
         </div>
       </CardHeader>
       
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6 pt-6">
         <SavedIngredientsList 
           ingredients={ingredients}
           onUpdate={handleUpdateIngredient}
@@ -54,7 +84,7 @@ const IngredientEntrySystem = ({ mealType, onBack, onComplete }) => {
         ) : (
           <Button 
             variant="outline" 
-            className="w-full"
+            className="w-full border-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 rounded-xl py-6 transition-all duration-200"
             onClick={() => setShowEntryForm(true)}
           >
             Add Ingredient
@@ -63,8 +93,8 @@ const IngredientEntrySystem = ({ mealType, onBack, onComplete }) => {
         
         {ingredients.length > 0 && (
           <Button 
-            className="w-full"
-            onClick={() => onComplete(ingredients)}
+            className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl py-6 shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200"
+            onClick={handleComplete}
           >
             Complete
           </Button>

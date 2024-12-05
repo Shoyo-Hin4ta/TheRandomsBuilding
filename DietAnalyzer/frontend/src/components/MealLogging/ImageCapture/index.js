@@ -122,29 +122,61 @@ const ImageCapture = ({ mealType, onBack, onComplete, isLoading }) => {
   );
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <Card className="bg-white/90 backdrop-blur-sm border-emerald-100">
+      <CardHeader className="pb-3 border-b border-emerald-100">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="icon"
             onClick={onBack}
             disabled={isLoading}
+            className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <CardTitle>Add Meal Image</CardTitle>
+          <CardTitle className="text-emerald-800">Add Meal Image</CardTitle>
         </div>
       </CardHeader>
       
-      <CardContent className="space-y-4">
-        {!captureMethod && !capturedImage && renderCaptureOptions()}
+      <CardContent className="space-y-6 pt-6">
+        {!captureMethod && !capturedImage && (
+          <div className="grid grid-cols-1 gap-4">
+            <Button 
+              className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white flex items-center justify-center gap-2 py-6 rounded-xl shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200"
+              onClick={() => setCaptureMethod('camera')}
+              disabled={isLoading}
+            >
+              <Camera className="w-6 h-6" />
+              Take Picture
+            </Button>
+            <Button 
+              variant="outline"
+              className="border-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 flex items-center justify-center gap-2 py-6 rounded-xl transition-colors duration-200"
+              onClick={() => {
+                setCaptureMethod('gallery');
+                fileInputRef.current?.click();
+              }}
+              disabled={isLoading}
+            >
+              <ImageIcon className="w-6 h-6" />
+              Choose from Gallery
+            </Button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileSelect}
+              disabled={isLoading}
+            />
+          </div>
+        )}
 
         {captureMethod === 'camera' && !capturedImage && (
-          <div className="relative aspect-square w-full bg-black rounded-lg overflow-hidden">
+          <div className="relative aspect-square w-full bg-black rounded-xl overflow-hidden shadow-lg">
             {error ? (
-              <div className="absolute inset-0 flex items-center justify-center text-white p-4 text-center">
-                {error}
+              <div className="absolute inset-0 flex items-center justify-center text-white p-6 text-center bg-black/80 backdrop-blur-sm">
+                <p className="text-lg">{error}</p>
               </div>
             ) : (
               <video
@@ -155,11 +187,11 @@ const ImageCapture = ({ mealType, onBack, onComplete, isLoading }) => {
               />
             )}
             
-            <div className="absolute bottom-0 left-0 right-0 p-4 flex justify-around bg-gradient-to-t from-black/50 to-transparent">
+            <div className="absolute bottom-0 left-0 right-0 p-6 flex justify-around bg-gradient-to-t from-black/80 to-transparent backdrop-blur-sm">
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-white hover:bg-white/20"
+                className="text-white hover:bg-white/20 rounded-full w-12 h-12"
                 onClick={() => setCaptureMethod(null)}
                 disabled={isLoading}
               >
@@ -167,18 +199,18 @@ const ImageCapture = ({ mealType, onBack, onComplete, isLoading }) => {
               </Button>
               
               <Button
-                size="lg"
-                className="rounded-full bg-white text-black hover:bg-white/90"
+                size="icon"
+                className="bg-white text-emerald-600 hover:bg-white/90 rounded-full w-16 h-16 shadow-lg transform hover:scale-105 transition-all duration-200"
                 onClick={captureImage}
                 disabled={isLoading}
               >
-                <Camera className="h-6 w-6" />
+                <Camera className="h-8 w-8" />
               </Button>
               
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-white hover:bg-white/20"
+                className="text-white hover:bg-white/20 rounded-full w-12 h-12"
                 onClick={startCamera}
                 disabled={isLoading}
               >
@@ -189,8 +221,8 @@ const ImageCapture = ({ mealType, onBack, onComplete, isLoading }) => {
         )}
 
         {capturedImage && (
-          <div className="space-y-4">
-            <div className="relative aspect-square w-full bg-black rounded-lg overflow-hidden">
+          <div className="space-y-6">
+            <div className="relative aspect-square w-full bg-black rounded-xl overflow-hidden shadow-lg">
               <img 
                 src={capturedImage} 
                 alt="Captured meal"
@@ -205,7 +237,7 @@ const ImageCapture = ({ mealType, onBack, onComplete, isLoading }) => {
             />
             
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label className="text-sm font-medium text-emerald-800">
                 Meal Name (optional)
               </label>
               <Input
@@ -213,13 +245,14 @@ const ImageCapture = ({ mealType, onBack, onComplete, isLoading }) => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 disabled={isLoading}
+                className="border-emerald-200 focus:ring-emerald-500 focus:border-emerald-500"
               />
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Button
                 variant="outline"
-                className="flex-1"
+                className="flex-1 border-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 rounded-xl py-6"
                 onClick={() => {
                   setCapturedImage(null);
                   setCaptureMethod(null);
@@ -229,7 +262,7 @@ const ImageCapture = ({ mealType, onBack, onComplete, isLoading }) => {
                 Retake
               </Button>
               <Button
-                className="flex-1"
+                className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl py-6 shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200"
                 disabled={!size || isLoading}
                 onClick={handleSubmit}
               >

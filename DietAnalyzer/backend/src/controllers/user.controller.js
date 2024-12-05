@@ -1,7 +1,7 @@
 import { User } from "../models/user.model.js";
 import jwt from "jsonwebtoken";
-import { ApiResponse } from "../utils/ApiResponse.js"
-import { ApiError } from "../utils/ApiError.js"
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { ApiError } from "../utils/ApiError.js";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -15,7 +15,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
     return { accessToken, refreshToken };
   } catch (error) {
-    throw new ApiError(500, "Something went wrong while generating tokens: " + error.message);
+    throw new ApiError(500, "Something went wrong while generating tokens");
   }
 };
 
@@ -23,62 +23,101 @@ export const signUp = async (req, res) => {
   try {
     const { username, email, password, firstName, lastName } = req.body;
 
-    if (!username || !email || !password) {
-      const error = new ApiError(400, "Username, email, and password are required");
-      return res.status(error.statusCode).json({
-        statusCode: error.statusCode,
-        message: error.message,
-        success: false,
-        data: null
-      });
+    // Input validation
+    if (!username?.trim()) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "Username is required"));
     }
 
-    const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+    if (!email?.trim()) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "Email is required"));
+    }
+
+    if (!password?.trim()) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "Password is required"));
+    }
+
+    // Username validation
+    if (username.length < 3) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "Username must be at least 3 characters long"));
+    }
+
+    if (username.length > 30) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "Username cannot exceed 30 characters"));
+    }
+
+    // Password validation
+    if (password.length < 6) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "Password must be at least 6 characters long"));
+    }
+
+    // Email format validation
+    const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+    if (!emailRegex.test(email)) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "Please provide a valid email address"));
+    }
+
+    // Check for existing user
+    const existingUser = await User.findOne({
+      $or: [
+        { username: { $regex: new RegExp(`^${username}$`, 'i') } },
+        { email: email.toLowerCase() }
+      ]
+    });
 
     if (existingUser) {
-      const error = new ApiError(409, "Username or email already exists");
-      return res.status(error.statusCode).json({
-        statusCode: error.statusCode,
-        message: error.message,
-        success: false,
-        data: null
-      });
+      if (existingUser.email === email.toLowerCase()) {
+        return res
+          .status(409)
+          .json(new ApiResponse(409, null, "Email is already registered"));
+      }
+      return res
+        .status(409)
+        .json(new ApiResponse(409, null, "Username is already taken"));
     }
 
+    // Create user
     const user = await User.create({
-      username,
-      email,
+      username: username.trim(),
+      email: email.toLowerCase().trim(),
       password,
-      firstName,
-      lastName
+      firstName: firstName?.trim(),
+      lastName: lastName?.trim()
     });
 
     const createdUser = await User.findById(user._id).select("-password -refreshToken");
 
     if (!createdUser) {
-      const error = new ApiError(500, "Something went wrong while creating the user");
-      return res.status(error.statusCode).json({
-        statusCode: error.statusCode,
-        message: error.message,
-        success: false,
-        data: null
-      });
+      throw new ApiError(500, "Something went wrong while registering the user");
     }
 
-    return res.status(201).json({
-      statusCode: 201,
-      message: "User created successfully",
-      success: true,
-      data: createdUser
-    });
+    return res
+      .status(201)
+      .json(new ApiResponse(201, createdUser, "Account created successfully! You can now sign in."));
+
   } catch (error) {
+    console.error("SignUp Error:", error);
     const statusCode = error instanceof ApiError ? error.statusCode : 500;
-    return res.status(statusCode).json({
-      statusCode,
-      message: error instanceof ApiError ? error.message : "Internal server error",
-      success: false,
-      data: null
-    });
+    const message = error instanceof ApiError 
+      ? error.message 
+      : "Something went wrong. Please try again.";
+    
+    return res
+      .status(statusCode)
+      .json(new ApiResponse(statusCode, null, message));
   }
 };
 
@@ -86,46 +125,34 @@ export const signIn = async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    if (!username) {
-      return res.status(400).json({
-        statusCode: 400,
-        message: "Username is required",
-        success: false,
-        data: null
-      });
+    if (!username?.trim()) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "Username is required"));
     }
 
-    if (!password) {
-      return res.status(400).json({
-        statusCode: 400,
-        message: "Password is required",
-        success: false,
-        data: null
-      });
+    if (!password?.trim()) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "Password is required"));
     }
 
-    console.log(username, password);
-
-    const user = await User.findOne({ username });
+    const user = await User.findOne({
+      username: { $regex: new RegExp(`^${username}$`, 'i') }
+    });
 
     if (!user) {
-      return res.status(404).json({
-        statusCode: 404,
-        message: "User not found",
-        success: false,
-        data: null
-      });
+      return res
+        .status(401)
+        .json(new ApiResponse(401, null, "Invalid credentials"));
     }
 
     const isPasswordValid = await user.isPasswordCorrect(password);
 
     if (!isPasswordValid) {
-      return res.status(401).json({
-        statusCode: 401,
-        message: "Invalid credentials",
-        success: false,
-        data: null
-      });
+      return res
+        .status(401)
+        .json(new ApiResponse(401, null, "Invalid credentials"));
     }
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
@@ -141,22 +168,22 @@ export const signIn = async (req, res) => {
       .status(200)
       .cookie("accessToken", accessToken, options)
       .cookie("refreshToken", refreshToken, options)
-      .json({
-        statusCode: 200,
-        message: "User logged in successfully",
-        success: true,
-        data: {
-          user: loggedInUser
-        }
-      });
+      .json(new ApiResponse(
+        200,
+        { user: loggedInUser },
+        "Sign in successful! Redirecting..."
+      ));
+
   } catch (error) {
+    console.error("SignIn Error:", error);
     const statusCode = error instanceof ApiError ? error.statusCode : 500;
-    return res.status(statusCode).json({
-      statusCode,
-      message: error instanceof ApiError ? error.message : "Internal server error",
-      success: false,
-      data: null
-    });
+    const message = error instanceof ApiError 
+      ? error.message 
+      : "Something went wrong. Please try again.";
+    
+    return res
+      .status(statusCode)
+      .json(new ApiResponse(statusCode, null, message));
   }
 };
 
@@ -179,19 +206,17 @@ export const logout = async (req, res) => {
       .status(200)
       .clearCookie("accessToken", options)
       .clearCookie("refreshToken", options)
-      .json({
-        statusCode: 200,
-        message: "User logged out successfully",
-        success: true,
-        data: {}
-      });
+      .json(new ApiResponse(
+        200,
+        {},
+        "Logged out successfully"
+      ));
+
   } catch (error) {
-    return res.status(500).json({
-      statusCode: 500,
-      message: "Internal server error",
-      success: false,
-      data: null
-    });
+    console.error("Logout Error:", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, null, "Something went wrong while logging out"));
   }
 };
 
@@ -200,34 +225,19 @@ export const refreshAccessToken = async (req, res) => {
     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
 
     if (!incomingRefreshToken) {
-      return res.status(401).json({
-        statusCode: 401,
-        message: "Unauthorized request",
-        success: false,
-        data: null
-      });
+      return res
+        .status(401)
+        .json(new ApiResponse(401, null, "Unauthorized request"));
     }
 
     try {
       const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
       const user = await User.findById(decodedToken?._id);
 
-      if (!user) {
-        return res.status(401).json({
-          statusCode: 401,
-          message: "Invalid refresh token",
-          success: false,
-          data: null
-        });
-      }
-
-      if (incomingRefreshToken !== user?.refreshToken) {
-        return res.status(401).json({
-          statusCode: 401,
-          message: "Invalid refresh token",
-          success: false,
-          data: null
-        });
+      if (!user || incomingRefreshToken !== user?.refreshToken) {
+        return res
+          .status(401)
+          .json(new ApiResponse(401, null, "Invalid refresh token"));
       }
 
       const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
@@ -241,26 +251,22 @@ export const refreshAccessToken = async (req, res) => {
         .status(200)
         .cookie("accessToken", accessToken, options)
         .cookie("refreshToken", refreshToken, options)
-        .json({
-          statusCode: 200,
-          message: "Access token refreshed successfully",
-          success: true,
-          data: { accessToken, refreshToken }
-        });
+        .json(new ApiResponse(
+          200,
+          { accessToken, refreshToken },
+          "Access token refreshed successfully"
+        ));
+
     } catch (err) {
-      return res.status(401).json({
-        statusCode: 401,
-        message: "Invalid refresh token",
-        success: false,
-        data: null
-      });
+      console.error("Token Verification Error:", err);
+      return res
+        .status(401)
+        .json(new ApiResponse(401, null, "Invalid refresh token"));
     }
   } catch (error) {
-    return res.status(401).json({
-      statusCode: 401,
-      message: "Invalid refresh token",
-      success: false,
-      data: null
-    });
+    console.error("Refresh Token Error:", error);
+    return res
+      .status(401)
+      .json(new ApiResponse(401, null, "Invalid refresh token"));
   }
 };

@@ -39,3 +39,6 @@ app.use('/api/meals', mealRouter);
 
 import recipeRouter from './routes/recipe.route.js';
 app.use('/api/recipes', recipeRouter);
+
+import generateReportRouter from './routes/report.route.js';
+app.use('/api/report', generateReportRouter);

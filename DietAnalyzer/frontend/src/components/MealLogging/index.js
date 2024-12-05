@@ -22,11 +22,15 @@ const MealLogging = () => {
   const handleMealSubmit = async (data) => {
     setIsLoading(true);
     try {
-      await mealService.addMeal({
-        ...data,
-        date: selectedDate
-      });
       
+      const mealData = {
+        ...data,
+        mealType: mealType, // Explicitly set mealType from component state
+        date: selectedDate
+      };
+      console.log('Submitting meal data:', mealData); // Debug log
+      await mealService.addMeal(mealData);
+
       // Reset form state
       setMealType('');
       setEntryMethod(null);
@@ -57,17 +61,17 @@ const MealLogging = () => {
   
 
   const renderInitialOptions = () => (
-    <Card className="mb-4">
-      <CardContent className="pt-6 space-y-4">
+    <Card className="mb-6 bg-white/90 backdrop-blur-sm border-emerald-100 shadow-md hover:shadow-lg transition-shadow duration-200">
+      <CardContent className="pt-8 space-y-6">
         <MealTypeSelector 
           value={mealType} 
           onChange={setMealType}
         />
         
         {mealType && (
-          <div className="grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-1 gap-4">
             <Button 
-              className="flex items-center justify-center gap-2"
+              className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white flex items-center justify-center gap-3 py-6 rounded-xl shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200"
               onClick={() => setEntryMethod('camera')}
               disabled={isLoading}
             >
@@ -77,7 +81,7 @@ const MealLogging = () => {
             <Button 
               variant="outline"
               onClick={() => setEntryMethod('manual')}
-              className="flex items-center justify-center gap-2"
+              className="border-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 flex items-center justify-center gap-3 py-6 rounded-xl transition-colors duration-200"
               disabled={isLoading}
             >
               <PenLine className="w-5 h-5" />
@@ -91,7 +95,10 @@ const MealLogging = () => {
 
   return (
     <div className="w-full max-w-md mx-auto p-4 pb-24">
-      <h1 className="text-2xl font-bold mb-6 text-center">Track Your Meal</h1>
+      <h1 className="text-3xl font-bold mb-8 text-center bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+        Track Your Meal
+      </h1>
+      
       {!entryMethod && renderInitialOptions()}
       
       {entryMethod === 'camera' && (
@@ -104,24 +111,25 @@ const MealLogging = () => {
       )}
       
       {entryMethod === 'manual' && !manualEntryType && (
-        <Card className="mb-4">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
+        <Card className="mb-6 bg-white/90 backdrop-blur-sm border-emerald-100 shadow-md">
+          <CardHeader className="pb-3 border-b border-emerald-100">
+            <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setEntryMethod(null)}
                 disabled={isLoading}
+                className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <CardTitle>Add Manual Entry</CardTitle>
+              <CardTitle className="text-emerald-800">Add Manual Entry</CardTitle>
             </div>
           </CardHeader>
 
           <CardContent className="pt-6 space-y-4">
             <Button 
-              className="w-full mb-3"
+              className="w-full py-6 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200"
               onClick={() => setManualEntryType('wholeMeal')}
               disabled={isLoading}
             >
@@ -129,7 +137,7 @@ const MealLogging = () => {
             </Button>
             <Button 
               variant="outline"
-              className="w-full"
+              className="w-full py-6 border-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 rounded-xl transition-colors duration-200"
               onClick={() => setManualEntryType('ingredients')}
               disabled={isLoading}
             >
@@ -157,7 +165,9 @@ const MealLogging = () => {
         />
       )}
 
-      <MealDisplayCards meals={meals} />
+      <div className="mb-24">
+        <MealDisplayCards meals={meals} />
+      </div>
 
       <DateSelector 
         selectedDate={selectedDate}

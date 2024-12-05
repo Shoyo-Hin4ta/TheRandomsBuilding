@@ -13,13 +13,28 @@ const SavedIngredientsList = ({ ingredients, onUpdate, onRemove }) => {
     return `${ingredient.amount} ${ingredient.unit}`;
   };
 
+  // Helper function to convert ingredient data for editing
+  const prepareIngredientForEditing = (ingredient) => {
+    if (ingredient.customMeasurement) {
+      return {
+        name: ingredient.name,
+        customMeasurement: ingredient.customMeasurement,
+      };
+    }
+    return {
+      name: ingredient.name,
+      amount: ingredient.amount,
+      unit: ingredient.unit
+    };
+  };
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {ingredients.map((ingredient) => (
         <div key={ingredient.id}>
           {editingId === ingredient.id ? (
             <IngredientEntry
-              initialValue={ingredient}
+              initialValue={prepareIngredientForEditing(ingredient)}
               onSave={(updated) => {
                 onUpdate(ingredient.id, updated);
                 setEditingId(null);
@@ -27,10 +42,10 @@ const SavedIngredientsList = ({ ingredients, onUpdate, onRemove }) => {
               onCancel={() => setEditingId(null)}
             />
           ) : (
-            <div className="flex items-center justify-between p-3 bg-white border rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm border border-emerald-100 rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
               <div>
-                <span className="font-medium">{ingredient.name}</span>
-                <span className="text-gray-500 ml-2">
+                <span className="font-medium text-emerald-800">{ingredient.name}</span>
+                <span className="text-emerald-600 ml-2 bg-emerald-50 px-2 py-1 rounded-full text-sm">
                   {formatMeasurement(ingredient)}
                 </span>
               </div>
@@ -39,13 +54,14 @@ const SavedIngredientsList = ({ ingredients, onUpdate, onRemove }) => {
                   variant="ghost"
                   size="icon"
                   onClick={() => setEditingId(ingredient.id)}
+                  className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg"
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-red-500 hover:text-red-600"
+                  className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
                   onClick={() => onRemove(ingredient.id)}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -56,8 +72,8 @@ const SavedIngredientsList = ({ ingredients, onUpdate, onRemove }) => {
         </div>
       ))}
       {ingredients.length === 0 && (
-        <div className="text-center text-gray-500 py-4">
-          No ingredients added yet
+        <div className="text-center text-emerald-600/70 py-8 bg-emerald-50/50 rounded-xl border border-emerald-100 backdrop-blur-sm">
+          <span className="font-medium">No ingredients added yet</span>
         </div>
       )}
     </div>

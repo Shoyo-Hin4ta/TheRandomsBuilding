@@ -57,7 +57,7 @@ const mealSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    default: '655310520a61c845a2906e19'
+    required: true
   },
   date: {
     type: Date,
@@ -89,7 +89,10 @@ const mealSchema = new mongoose.Schema({
     trim: true
   },
   ingredients: [ingredientSchema],
-  nutritionInfo: nutritionInfoSchema
+  nutritionInfo: {
+    type: nutritionInfoSchema,
+    required: true
+  }
 }, {
   timestamps: true
 });

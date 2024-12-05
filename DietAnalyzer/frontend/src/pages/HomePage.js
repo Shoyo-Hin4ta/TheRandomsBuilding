@@ -15,22 +15,24 @@ const HomePage = () => {
   useEffect(() => {
     if (location.state?.scrollToSignIn && authFormRef.current) {
       authFormRef.current.scrollIntoView({ behavior: 'smooth' });
-      // Clean up the state so it doesn't scroll again on refresh
       window.history.replaceState({}, document.title);
     }
   }, [location]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
-      {/* Main container with responsive layout */}
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50">
       <div className="flex flex-col lg:flex-row w-full">
-        {/* Hero section - full width on mobile, half on desktop */}
-        <div className="w-full lg:w-1/2 bg-gradient-to-br from-emerald-500 to-green-600 text-white p-4 sm:p-8 lg:p-12 min-h-screen lg:min-h-screen flex items-center justify-center relative overflow-hidden">
-          {/* Decorative background circles */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-400 rounded-full opacity-10 -mr-32 -mt-32" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-green-700 rounded-full opacity-10 -ml-48 -mb-48" />
+        {/* Hero section */}
+        <div className="w-full lg:w-1/2 bg-gradient-to-br from-emerald-600 to-teal-600 text-white p-8 sm:p-12 lg:p-16 min-h-screen flex items-center justify-center relative overflow-hidden">
+          {/* Animated background elements */}
+          <div className="absolute inset-0">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2" />
+            <div className="absolute bottom-0 left-0 w-[40rem] h-[40rem] bg-teal-500/20 rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2" />
+            <div className="absolute top-1/2 left-1/2 w-[30rem] h-[30rem] bg-emerald-400/10 rounded-full blur-2xl transform -translate-x-1/2 -translate-y-1/2" />
+          </div>
           
-          <div className="max-w-xl w-full relative z-10">
+          {/* Content */}
+          <div className="max-w-2xl w-full relative z-10">
             <Hero onSignUpClick={scrollToAuth} />
           </div>
         </div>
@@ -38,9 +40,13 @@ const HomePage = () => {
         {/* Auth form section */}
         <div 
           ref={authFormRef}
-          className="w-full lg:w-1/2 p-4 sm:p-8 lg:p-12 min-h-screen lg:min-h-screen flex items-center justify-center bg-white bg-opacity-50 backdrop-blur-sm"
+          className="w-full lg:w-1/2 p-8 sm:p-12 lg:p-16 min-h-screen flex items-center justify-center bg-white/70 backdrop-blur-md"
         >
-          <div className="max-w-xl w-full">
+          <div className="max-w-xl w-full relative">
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-100 rounded-full blur-3xl opacity-50 -z-10" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-100 rounded-full blur-3xl opacity-50 -z-10" />
+            
             <AuthForm />
           </div>
         </div>
