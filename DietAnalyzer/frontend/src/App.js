@@ -10,6 +10,7 @@ import MealLogging from '@/components/MealLogging';
 import AuthLayout from './components/Auth/Layout';
 import Dashboard from './components/Dashboard';
 import RecipeForm from './components/RecipeGeneration/RecipeForm';
+import GenerateReport from './components/GeneratePDF/GenerateReport';
 
 const ConditionalRoute = ({ children }) => {
   const isAuthenticated = useSelector(state => state.user.isAuthenticated);
@@ -74,6 +75,12 @@ function App() {
           <Route path="/all-recipes" element={
             <ProtectedRoute>
               <AllRecipes />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/generate-report" element={
+            <ProtectedRoute>
+              <GenerateReport />
             </ProtectedRoute>
           } />
         </Routes>

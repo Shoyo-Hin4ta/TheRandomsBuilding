@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, LogOut, User, UtensilsCrossed, Notebook, LineChart } from 'lucide-react';
+import { ChevronDown, LogOut, User, UtensilsCrossed, Notebook, LineChart, FileText } from 'lucide-react';
 import { clearUser } from '../../store/slice/userSlice';
 import axios from 'axios';
 
@@ -38,7 +38,8 @@ const AuthLayout = ({ children }) => {
   const menu = [
     { name: 'Meal Logging', path: '/meal-logging', icon: UtensilsCrossed },
     { name: 'Recipe Generation', path: '/recipe-generation', icon: Notebook },
-    { name: 'Dashboard', path: '/dashboard', icon: LineChart }
+    { name: 'Dashboard', path: '/dashboard', icon: LineChart },
+    { name: 'Generate Report', path: '/generate-report', icon: FileText } // Add this line
   ];
 
   return (

@@ -86,58 +86,94 @@ const generateMealReport = async (req, res) => {
             }, {})
         };
 
-        // Generate AI analysis using OpenAI
         const completion = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: [
                 {
                     role: "system",
-                    content: "You are a nutritionist analyzing meal data and providing health insights."
+                    content: "You are a nutritionist analyzing meal data and providing health insights in a structured JSON format."
                 },
                 {
                     role: "user",
-                    content: JSON.stringify({
-                        task: "Analyze nutritional data and provide insights",
-                        data: analysisData,
-                        diseases: diseases
-                    })
+                    content: `Please analyze this nutritional data and provide insights:
+                    Daily Averages:
+                    - Calories: ${dailyAverages.calories.toFixed(1)}
+                    - Protein: ${dailyAverages.protein.toFixed(1)}g
+                    - Carbohydrates: ${dailyAverages.carbs.toFixed(1)}g
+                    - Fat: ${dailyAverages.fat.toFixed(1)}g
+                    
+                    Time Period: ${timeFrame}
+                    Total Meals Analyzed: ${nutritionalSummary.mealCount}
+                    Health Conditions: ${diseases.join(', ') || 'None reported'}
+                    
+                    Meal Distribution:
+                    ${Object.entries(analysisData.mealTypes)
+                        .map(([type, count]) => `${type}: ${count} meals`)
+                        .join('\n')}`
                 }
             ],
             response_format: {
                 type: "json_schema",
-                schema: {
-                    type: "object",
-                    properties: {
-                        summary: {
-                            type: "string",
-                            description: "Overall summary of the nutritional analysis"
-                        },
-                        healthConcerns: {
-                            type: "array",
-                            items: {
-                                type: "string"
+                json_schema: {
+                    name: "nutrition_analysis_schema",
+                    schema: {
+                        type: "object",
+                        properties: {
+                            summary: {
+                                type: "string",
+                                description: "Overall summary of the nutritional analysis"
                             },
-                            description: "List of health concerns based on the diet and diseases"
-                        },
-                        recommendations: {
-                            type: "array",
-                            items: {
-                                type: "string"
+                            healthConcerns: {
+                                type: "array",
+                                items: {
+                                    type: "string"
+                                },
+                                description: "List of health concerns based on the diet patterns"
                             },
-                            description: "List of dietary recommendations"
-                        },
-                        diseaseSpecificAdvice: {
-                            type: "object",
-                            additionalProperties: {
-                                type: "string"
+                            recommendations: {
+                                type: "array",
+                                items: {
+                                    type: "string"
+                                },
+                                description: "List of specific dietary recommendations"
                             },
-                            description: "Specific advice for each disease condition"
-                        }
+                            diseaseSpecificAdvice: {
+                                type: "object",
+                                additionalProperties: {
+                                    type: "string"
+                                },
+                                description: "Specific nutritional advice for each reported health condition"
+                            },
+                            nutritionalBalance: {
+                                type: "object",
+                                properties: {
+                                    proteinStatus: {
+                                        type: "string",
+                                        description: "Assessment of protein intake"
+                                    },
+                                    carbStatus: {
+                                        type: "string",
+                                        description: "Assessment of carbohydrate intake"
+                                    },
+                                    fatStatus: {
+                                        type: "string",
+                                        description: "Assessment of fat intake"
+                                    },
+                                    calorieStatus: {
+                                        type: "string",
+                                        description: "Assessment of caloric intake"
+                                    }
+                                },
+                                required: ["proteinStatus", "carbStatus", "fatStatus", "calorieStatus"]
+                            }
+                        },
+                        required: ["summary", "healthConcerns", "recommendations", "nutritionalBalance"]
                     }
                 }
             }
         });
 
+        // Parse AI response
         const aiAnalysis = JSON.parse(completion.choices[0].message.content);
 
         // Prepare final report
@@ -169,6 +205,9 @@ const generateMealReport = async (req, res) => {
 
     } catch (error) {
         console.error("Generate Meal Report Error:", error);
+        if (error.error?.type === 'invalid_request_error') {
+            throw new ApiError(400, "Invalid request to analysis service: " + error.message);
+        }
         throw new ApiError(error?.statusCode || 500, error?.message || "Failed to generate meal report");
     }
 };
