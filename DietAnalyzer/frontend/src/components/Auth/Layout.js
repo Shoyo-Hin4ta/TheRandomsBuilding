@@ -37,9 +37,9 @@ const AuthLayout = ({ children }) => {
 
   const menu = [
     { name: 'Meal Logging', path: '/meal-logging', icon: UtensilsCrossed },
-    { name: 'Recipe Generation', path: '/recipe-generation', icon: Notebook },
     { name: 'Dashboard', path: '/dashboard', icon: LineChart },
-    { name: 'Generate Report', path: '/generate-report', icon: FileText } // Add this line
+    { name: 'Recipe Generation', path: '/recipe-generation', icon: Notebook },
+    { name: 'Generate Report', path: '/generate-report', icon: FileText }
   ];
 
   return (

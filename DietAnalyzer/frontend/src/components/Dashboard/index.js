@@ -10,10 +10,15 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import MealAnalysisDialog from '../MealLogging/MealComponents/MealAnalysisDialog';
+import NutritionChart from './NutritionChart';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 export default function Dashboard() {
+
+  const [selectedMeal, setSelectedMeal] = useState(null);
+
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [mealsByType, setMealsByType] = useState({
     breakfast: [],
@@ -25,6 +30,52 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
   const currentUser = useSelector(selectCurrentUser);
   const { toast } = useToast();
+
+
+  const [nutritionData, setNutritionData] = useState([]);
+  const [isChartLoading, setIsChartLoading] = useState(false);
+  
+  const fetchNutritionData = async (dateRange) => {
+    if (!dateRange?.from || !dateRange?.to) {
+      console.log('Invalid date range:', dateRange);
+      return;
+    }
+  
+    setIsChartLoading(true);
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/meals/nutrition`,
+        { 
+          params: {
+            startDate: dateRange.from.toISOString(),
+            endDate: dateRange.to.toISOString()
+          },
+          withCredentials: true 
+        }
+      );
+      setNutritionData(response.data.data);
+    } catch (error) {
+      console.error('Error fetching nutrition data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch nutrition data",
+        variant: "destructive",
+      });
+      setNutritionData([]); // Reset data on error
+    } finally {
+      setIsChartLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    if (currentUser) {
+      const today = new Date();
+      fetchNutritionData({
+        from: today,
+        to: today
+      });
+    }
+  }, [currentUser]);
 
   const fetchMeals = async () => {
     if (!currentUser) return;
@@ -139,47 +190,55 @@ export default function Dashboard() {
               {meals.map((meal) => (
                 <div 
                   key={meal._id} 
-                  className="group relative flex justify-between items-start border-b border-emerald-100 pb-3 hover:bg-emerald-50/50 rounded-lg transition-colors duration-200 p-2"
+                  className="group relative flex flex-col border-b border-emerald-100 pb-3 hover:bg-emerald-50/50 rounded-lg transition-colors duration-200 p-2 cursor-pointer"
+                  onClick={() => setSelectedMeal(meal)}
                 >
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute -right-2 -top-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-red-100 hover:bg-red-200 text-red-600 rounded-full"
-                    onClick={() => handleDeleteMeal(meal._id)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                  
-                  <div className="flex-1 pr-6">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-emerald-900">{meal.name}</p>
-                      {meal.size !== 'M' && (
-                        <Badge 
-                          variant="outline" 
-                          className="text-xs border-emerald-200 text-emerald-700"
-                        >
-                          {meal.size}
-                        </Badge>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 pr-6">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-emerald-900">{meal.name}</p>
+                        {meal.size !== 'M' && (
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs border-emerald-200 text-emerald-700"
+                          >
+                            {meal.size}
+                          </Badge>
+                        )}
+                      </div>
+                      {meal.ingredients?.length > 0 && (
+                        <p className="text-xs text-emerald-600/80 mt-1">
+                          {meal.ingredients.map(i => i.name).join(', ')}
+                        </p>
                       )}
-                    </div>
-                    {meal.ingredients?.length > 0 && (
-                      <p className="text-xs text-emerald-600/80 mt-1">
-                        {meal.ingredients.map(i => i.name).join(', ')}
+                      <p className="text-sm text-emerald-600/70 mt-1 hover:break-normal break-all">
+                        {meal.nutritionInfo?.macroNutrientFacts}
                       </p>
-                    )}
-                    <p className="text-sm text-emerald-600/70 mt-1 hover:break-normal break-all">
-                      {meal.nutritionInfo?.macroNutrientFacts}
-                    </p>
+                    </div>
+                    <div className="text-sm text-right">
+                      <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors">
+                        {meal.nutritionInfo?.calories} cal
+                      </Badge>
+                      <p className="text-xs text-emerald-600 mt-1">
+                        P: {meal.nutritionInfo?.protein}g • 
+                        C: {meal.nutritionInfo?.carbohydrates}g • 
+                        F: {meal.nutritionInfo?.fat}g
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-sm text-right">
-                    <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors">
-                      {meal.nutritionInfo?.calories} cal
-                    </Badge>
-                    <p className="text-xs text-emerald-600 mt-1">
-                      P: {meal.nutritionInfo?.protein}g • 
-                      C: {meal.nutritionInfo?.carbohydrates}g • 
-                      F: {meal.nutritionInfo?.fat}g
-                    </p>
+                  
+                  <div className="mt-2 flex justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-red-600 hover:text-red-700 hover:bg-red-100/50"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteMeal(meal._id);
+                      }}
+                    >
+                      Remove
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -204,6 +263,14 @@ export default function Dashboard() {
         <h1 className="text-3xl font-bold mb-8 text-center bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
           {currentUser?.firstName}'s Dashboard
         </h1>
+
+        <div className="grid gap-4 mb-6">
+          <NutritionChart 
+            nutritionData={nutritionData}
+            onDateRangeChange={fetchNutritionData}
+            isLoading={isChartLoading}
+          />
+        </div>
         
         {Object.entries(mealsByType).map(([type, meals]) => 
           renderMealTypeCard(type, meals)
@@ -222,6 +289,11 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      <MealAnalysisDialog
+        meal={selectedMeal}
+        isOpen={!!selectedMeal}
+        onClose={() => setSelectedMeal(null)}
+      />
     </div>
   );
 }
