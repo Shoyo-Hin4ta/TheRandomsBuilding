@@ -37,27 +37,19 @@ const analyzeWithGPT = async (imagePath, size = 'M') => {
     const base64Image = Buffer.from(imageBuffer).toString('base64');
     const dataUrl = `data:${contentType};base64,${base64Image}`;
 
-    console.log('Image size:', imageBuffer.length);
-    console.log('Base64 length:', dataUrl.length);
-
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: "You analyze food images and provide nutritional information in JSON format."
+          content: "You analyze food images and provide nutritional and ingredient information in JSON format."
         },
         {
           role: "user",
           content: [
             { 
               type: "text", 
-              text: `Analyze this meal image and provide nutritional information. Consider this is a ${size} sized portion where:
-              XS = Half of a regular portion
-              S = 75% of a regular portion
-              M = Regular portion
-              L = 150% of regular portion
-              XL = Double regular portion`
+              text: `Analyze this meal image and provide nutritional information and ingredient analysis. Consider this is a ${size} sized portion.` 
             },
             {
               type: "image_url",
@@ -72,7 +64,7 @@ const analyzeWithGPT = async (imagePath, size = 'M') => {
       response_format: {
         type: "json_schema",
         json_schema: {
-          name: "meal_nutrition_schema",
+          name: "meal_analysis_schema",
           schema: {
             type: "object",
             properties: {
@@ -95,34 +87,42 @@ const analyzeWithGPT = async (imagePath, size = 'M') => {
               macroNutrientFacts: {
                 type: "string",
                 description: "Description of the meal's macro nutrient composition"
+              },
+              ingredientAnalysis: {
+                type: "object",
+                description: "Detailed analysis of meal ingredients",
+                properties: {
+                  mainIngredients: {
+                    type: "array",
+                    description: "List of primary ingredients in the meal",
+                    items: { 
+                      type: "string" 
+                    }
+                  },
+                  nutritionalHighlights: {
+                    type: "string",
+                    description: "Key nutritional features of the meal"
+                  },
+                  dietaryConsiderations: {
+                    type: "string",
+                    description: "Important dietary notes about the meal"
+                  },
+                  healthBenefits: {
+                    type: "string",
+                    description: "Potential health benefits of the meal"
+                  }
+                },
+                required: ["mainIngredients", "nutritionalHighlights", "dietaryConsiderations", "healthBenefits"]
               }
             },
-            required: ["calories", "protein", "carbohydrates", "fat", "macroNutrientFacts"],
+            required: ["calories", "protein", "carbohydrates", "fat", "macroNutrientFacts", "ingredientAnalysis"],
             additionalProperties: false
           }
         }
-      },
-      max_tokens: 1000,
+      }
     });
 
-    const content = response.choices[0].message.content;
-    let parsedContent;
-
-    try {
-      parsedContent = JSON.parse(content);
-    } catch (error) {
-      console.log("Failed to parse GPT response, using zero values");
-      parsedContent = {
-        calories: 0,
-        protein: 0,
-        carbohydrates: 0,
-        fat: 0,
-        macroNutrientFacts: "Meal Analysis failed. Please try uploading the image again or enter meal details manually."
-      };
-    }
-
-    return parsedContent;
-
+    return JSON.parse(response.choices[0].message.content);
   } catch (error) {
     console.error("GPT Vision Analysis Error:", error);
     return {
@@ -130,7 +130,13 @@ const analyzeWithGPT = async (imagePath, size = 'M') => {
       protein: 0,
       carbohydrates: 0,
       fat: 0,
-      macroNutrientFacts: "Meal Analysis failed. Please try uploading the image again or enter meal details manually."
+      macroNutrientFacts: "Analysis failed",
+      ingredientAnalysis: {
+        mainIngredients: [],
+        nutritionalHighlights: "Analysis failed",
+        dietaryConsiderations: "Analysis failed",
+        healthBenefits: "Analysis failed"
+      }
     };
   }
 };
@@ -142,24 +148,17 @@ const analyzeTextWithGPT = async (content, size = 'M') => {
       messages: [
         {
           role: "system",
-          content: "You analyze meals and provide nutritional information in JSON format."
+          content: "You analyze meals and provide nutritional and ingredient information in JSON format."
         },
         {
           role: "user",
-          content: `Analyze this meal and provide nutritional information: ${content}. 
-          Consider portion size adjustments where:
-          XS = 50% of regular portion
-          S = 75% of regular portion
-          M = 100% (regular portion)
-          L = 150% of regular portion
-          XL = 200% of regular portion
-          Current size: ${size}`
+          content: `Analyze this meal and provide nutritional information and ingredient analysis: ${content}. Consider portion size adjustments where: XS = 50%, S = 75%, M = 100%, L = 150%, XL = 200% of regular portion. Current size: ${size}`
         }
       ],
       response_format: {
         type: "json_schema",
         json_schema: {
-          name: "meal_nutrition_schema",
+          name: "meal_analysis_schema",
           schema: {
             type: "object",
             properties: {
@@ -182,57 +181,89 @@ const analyzeTextWithGPT = async (content, size = 'M') => {
               macroNutrientFacts: {
                 type: "string",
                 description: "Description of the meal's macro nutrient composition"
+              },
+              ingredientAnalysis: {
+                type: "object",
+                description: "Detailed analysis of meal ingredients",
+                properties: {
+                  mainIngredients: {
+                    type: "array",
+                    items: { type: "string" }
+                  },
+                  nutritionalHighlights: {
+                    type: "string"
+                  },
+                  dietaryConsiderations: {
+                    type: "string"
+                  },
+                  healthBenefits: {
+                    type: "string"
+                  }
+                },
+                required: ["mainIngredients", "nutritionalHighlights", "dietaryConsiderations", "healthBenefits"]
               }
             },
-            required: ["calories", "protein", "carbohydrates", "fat", "macroNutrientFacts"],
-            additionalProperties: false
+            required: ["calories", "protein", "carbohydrates", "fat", "macroNutrientFacts", "ingredientAnalysis"]
           }
         }
-      },
-      max_tokens: 1000
+      }
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    const parsedResponse = JSON.parse(response.choices[0].message.content);
+    
+    // Ensure macroNutrientFacts is present, generate if missing
+    if (!parsedResponse.macroNutrientFacts) {
+      parsedResponse.macroNutrientFacts = `This meal contains ${parsedResponse.protein}g protein, ${parsedResponse.carbohydrates}g carbohydrates, and ${parsedResponse.fat}g fat, totaling ${parsedResponse.calories} calories.`;
+    }
+
+    return parsedResponse;
   } catch (error) {
     console.error("GPT Text Analysis Error:", error);
+    // Return a valid object with all required fields
     return {
       calories: 0,
       protein: 0,
       carbohydrates: 0,
       fat: 0,
-      macroNutrientFacts: "Analysis failed. Please try again with more details."
+      macroNutrientFacts: "Analysis failed",
+      ingredientAnalysis: {
+        mainIngredients: [],
+        nutritionalHighlights: "Analysis failed",
+        dietaryConsiderations: "Analysis failed",
+        healthBenefits: "Analysis failed"
+      }
     };
   }
 };
 
-// Helper function to validate and parse JSON
-const validateAndParseJSON = (content) => {
-  try {
-    // Remove any potential markdown code blocks or extra text
-    let jsonStr = content.trim();
-    if (jsonStr.includes('```json')) {
-      jsonStr = jsonStr.split('```json')[1].split('```')[0].trim();
-    } else if (jsonStr.includes('```')) {
-      jsonStr = jsonStr.split('```')[1].split('```')[0].trim();
-    }
+// // Helper function to validate and parse JSON
+// const validateAndParseJSON = (content) => {
+//   try {
+//     // Remove any potential markdown code blocks or extra text
+//     let jsonStr = content.trim();
+//     if (jsonStr.includes('```json')) {
+//       jsonStr = jsonStr.split('```json')[1].split('```')[0].trim();
+//     } else if (jsonStr.includes('```')) {
+//       jsonStr = jsonStr.split('```')[1].split('```')[0].trim();
+//     }
 
-    // Parse the JSON
-    const parsed = JSON.parse(jsonStr);
+//     // Parse the JSON
+//     const parsed = JSON.parse(jsonStr);
 
-    // Validate required fields
-    const requiredFields = ['calories', 'protein', 'carbohydrates', 'fat', 'macroNutrientFacts'];
-    const missingFields = requiredFields.filter(field => !(field in parsed));
+//     // Validate required fields
+//     const requiredFields = ['calories', 'protein', 'carbohydrates', 'fat', 'macroNutrientFacts'];
+//     const missingFields = requiredFields.filter(field => !(field in parsed));
 
-    if (missingFields.length > 0) {
-      throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
-    }
+//     if (missingFields.length > 0) {
+//       throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+//     }
 
-    return parsed;
-  } catch (error) {
-    console.error('JSON Parsing Error:', error, 'Content:', content);
-    throw new Error('Failed to parse nutritional information');
-  }
-};
+//     return parsed;
+//   } catch (error) {
+//     console.error('JSON Parsing Error:', error, 'Content:', content);
+//     throw new Error('Failed to parse nutritional information');
+//   }
+// };
 
 const generateMealName = async (mealType, userId, date, existingMeals = null) => {
   try {
@@ -483,6 +514,95 @@ export const deleteMeal = async (req, res) => {
     throw new ApiError(
       error?.statusCode || 500, 
       error?.message || "Failed to delete meal"
+    );
+  }
+};
+
+export const getNutritionData = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    // Convert strings to Date objects
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    const meals = await Meal.find({
+      user: req.user._id,
+      date: {
+        $gte: start,
+        $lte: end
+      }
+    }).sort({ date: 1 });
+
+    // Get all dates between start and end
+    const dates = [];
+    const currentDate = new Date(start);
+    while (currentDate <= end) {
+      dates.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // Group meals by date and calculate daily totals
+    const dailyTotals = meals.reduce((acc, meal) => {
+      const dateKey = new Date(meal.date).toISOString().split('T')[0];
+      
+      if (!acc[dateKey]) {
+        acc[dateKey] = {
+          date: new Date(meal.date).toLocaleDateString('en-US', { 
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          }),
+          calories: 0,
+          protein: 0,
+          carbohydrates: 0,
+          fat: 0,
+          mealCount: 0
+        };
+      }
+      
+      acc[dateKey].calories += meal.nutritionInfo?.calories || 0;
+      acc[dateKey].protein += meal.nutritionInfo?.protein || 0;
+      acc[dateKey].carbohydrates += meal.nutritionInfo?.carbohydrates || 0;
+      acc[dateKey].fat += meal.nutritionInfo?.fat || 0;
+      acc[dateKey].mealCount += 1;
+      
+      return acc;
+    }, {});
+
+    // Fill in all dates with data or zeros
+    const nutritionData = dates.map(date => {
+      const dateKey = date.toISOString().split('T')[0];
+      return dailyTotals[dateKey] || {
+        date: date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        }),
+        calories: 0,
+        protein: 0,
+        carbohydrates: 0,
+        fat: 0,
+        mealCount: 0
+      };
+    });
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        nutritionData,
+        "Nutrition data retrieved successfully"
+      )
+    );
+
+  } catch (error) {
+    console.error("Get Nutrition Data Error:", error);
+    throw new ApiError(
+      error?.statusCode || 500,
+      error?.message || "Failed to fetch nutrition data"
     );
   }
 };

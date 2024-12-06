@@ -43,6 +43,11 @@ const userSchema = new mongoose.Schema({
     },
     refreshToken : {
         type : String,
+    },
+    age: {
+      type: Number,
+      min: [13, 'Must be at least 13 years old'],
+      max: [120, 'Please enter a valid age']
     }
   });
   

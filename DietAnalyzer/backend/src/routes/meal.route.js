@@ -3,7 +3,8 @@ import {
   addMeal,
   getMealsByDate,
   updateMeal,
-  deleteMeal
+  deleteMeal,
+  getNutritionData
 } from '../controllers/meal.controller.js';
 import { upload } from '../middlewares/multer.middleware.js';
 import { verifyJWT } from '../middlewares/auth.middleware.js';
@@ -19,5 +20,7 @@ router.post('/', upload.single('image'), addMeal);
 router.get('/date/:date', getMealsByDate);
 router.put('/:id', updateMeal);
 router.delete('/:id', deleteMeal);
+router.get('/nutrition', getNutritionData);
+
 
 export default router;

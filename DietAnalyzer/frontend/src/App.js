@@ -11,6 +11,7 @@ import AuthLayout from './components/Auth/Layout';
 import Dashboard from './components/Dashboard';
 import RecipeForm from './components/RecipeGeneration/RecipeForm';
 import GenerateReport from './components/GeneratePDF/GenerateReport';
+import Analysis from './components/Dashboard/Analysis';
 
 const ConditionalRoute = ({ children }) => {
   const isAuthenticated = useSelector(state => state.user.isAuthenticated);
@@ -83,6 +84,12 @@ function App() {
               <GenerateReport />
             </ProtectedRoute>
           } />
+
+          <Route path="/analysis" element={
+                      <ProtectedRoute>
+                        <Analysis />
+                      </ProtectedRoute>
+                    } />
         </Routes>
       </Router>
     </Provider>

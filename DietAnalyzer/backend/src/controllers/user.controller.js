@@ -21,7 +21,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
 export const signUp = async (req, res) => {
   try {
-    const { username, email, password, firstName, lastName } = req.body;
+    const { username, email, password, firstName, lastName, age } = req.body;
 
     // Input validation
     if (!username?.trim()) {
@@ -62,6 +62,12 @@ export const signUp = async (req, res) => {
         .json(new ApiResponse(400, null, "Password must be at least 6 characters long"));
     }
 
+    if (age && (age < 13 || age > 120)) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "Age must be between 13 and 120"));
+    }
+
     // Email format validation
     const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
     if (!emailRegex.test(email)) {
@@ -95,7 +101,8 @@ export const signUp = async (req, res) => {
       email: email.toLowerCase().trim(),
       password,
       firstName: firstName?.trim(),
-      lastName: lastName?.trim()
+      lastName: lastName?.trim(),
+      age: age || undefined
     });
 
     const createdUser = await User.findById(user._id).select("-password -refreshToken");

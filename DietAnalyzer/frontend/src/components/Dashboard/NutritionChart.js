@@ -3,9 +3,9 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { format } from "date-fns";
-import { Calendar as CalendarIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon } from "lucide-react";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { format, subDays, subWeeks, subMonths } from "date-fns";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -18,9 +18,14 @@ const CustomTooltip = ({ active, payload, label, chartType }) => {
       <div className="bg-white/95 border border-emerald-200 rounded-lg p-3 shadow-lg">
         <p className="font-medium text-emerald-800">{label}</p>
         {chartType === "calories" ? (
-          <p className="text-emerald-600">
-            {payload[0].value.toFixed(0)} calories
-          </p>
+          <div className="space-y-1">
+            <p className="text-emerald-600">
+              {payload[0].value.toFixed(0)} calories
+            </p>
+            <p className="text-xs text-emerald-600/70">
+              Meals logged: {payload[0]?.payload?.mealCount || 0}
+            </p>
+          </div>
         ) : (
           <div className="space-y-1">
             <p className="text-emerald-600">
@@ -32,6 +37,9 @@ const CustomTooltip = ({ active, payload, label, chartType }) => {
             <p className="text-emerald-600">
               Fat: {payload[2].value.toFixed(1)}g
             </p>
+            <p className="text-xs text-emerald-600/70">
+              Total: {(payload[0].value + payload[1].value + payload[2].value).toFixed(1)}g
+            </p>
           </div>
         )}
       </div>
@@ -42,16 +50,50 @@ const CustomTooltip = ({ active, payload, label, chartType }) => {
 
 const NoDataDisplay = () => (
   <div className="h-[400px] w-full flex items-center justify-center">
-    <p className="text-emerald-600/70 text-center">
-      No nutrition data available for the selected date range
-    </p>
+    <div className="text-center">
+      <p className="text-emerald-600/70 mb-2">
+        No nutrition data available for the selected date range
+      </p>
+      <p className="text-sm text-emerald-600/50">
+        Try selecting a different date range or log some meals
+      </p>
+    </div>
   </div>
 );
+
+const QuickDateSelector = ({ onSelect }) => {
+  const options = [
+    { label: '7D', value: 7 },
+    { label: '14D', value: 14 },
+    { label: '1M', value: 30 },
+    { label: '3M', value: 90 }
+  ];
+
+  return (
+    <div className="flex gap-2">
+      {options.map(({ label, value }) => (
+        <Button
+          key={label}
+          variant="outline"
+          size="sm"
+          className="text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+          onClick={() => {
+            const endDate = new Date();
+            const startDate = subDays(endDate, value);
+            onSelect({ from: startDate, to: endDate });
+          }}
+        >
+          {label}
+        </Button>
+      ))}
+    </div>
+  );
+};
 
 const NutritionChart = ({ nutritionData, onDateRangeChange, isLoading }) => {
   const [chartType, setChartType] = useState("calories");
   const [dateRange, setDateRange] = useState({
-    from: new Date(),
+    from: subDays(new Date(), 7),
     to: new Date()
   });
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -62,8 +104,8 @@ const NutritionChart = ({ nutritionData, onDateRangeChange, isLoading }) => {
 
   const handleDateSelect = (range) => {
     const newRange = {
-      from: range?.from || new Date(),
-      to: range?.to || range?.from || new Date()
+      from: range?.from || dateRange.from,
+      to: range?.to || range?.from || dateRange.to
     };
     
     setDateRange(newRange);
@@ -98,6 +140,15 @@ const NutritionChart = ({ nutritionData, onDateRangeChange, isLoading }) => {
       return <NoDataDisplay />;
     }
 
+    const getDomainPadding = (data, key) => {
+      const values = data.map(item => item[key]).filter(v => v > 0);
+      if (!values.length) return [0, 10];
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const padding = (max - min) * 0.1;
+      return [Math.max(0, min - padding), max + padding];
+    };
+
     return (
       <ResponsiveContainer width="100%" height={400}>
         {chartType === "calories" ? (
@@ -115,6 +166,7 @@ const NutritionChart = ({ nutritionData, onDateRangeChange, isLoading }) => {
               stroke="#059669"
               fontSize={12}
               tickFormatter={(value) => `${value}cal`}
+              domain={getDomainPadding(nutritionData, 'calories')}
             />
             <Tooltip content={(props) => <CustomTooltip {...props} chartType={chartType} />} />
             <Line 
@@ -124,6 +176,7 @@ const NutritionChart = ({ nutritionData, onDateRangeChange, isLoading }) => {
               strokeWidth={2}
               dot={{ fill: '#059669', r: 4 }}
               activeDot={{ r: 6, fill: '#047857' }}
+              connectNulls
             />
           </LineChart>
         ) : (
@@ -143,6 +196,18 @@ const NutritionChart = ({ nutritionData, onDateRangeChange, isLoading }) => {
               tickFormatter={(value) => `${value}g`}
             />
             <Tooltip content={(props) => <CustomTooltip {...props} chartType={chartType} />} />
+            <Legend
+              verticalAlign="top"
+              height={36}
+              formatter={(value) => {
+                const labels = {
+                  protein: 'Protein',
+                  carbohydrates: 'Carbs',
+                  fat: 'Fat'
+                };
+                return <span className="text-sm text-emerald-700">{labels[value]}</span>;
+              }}
+            />
             <Bar dataKey="protein" stackId="a" fill="#059669" />
             <Bar dataKey="carbohydrates" stackId="a" fill="#10b981" />
             <Bar dataKey="fat" stackId="a" fill="#34d399" />
@@ -155,12 +220,33 @@ const NutritionChart = ({ nutritionData, onDateRangeChange, isLoading }) => {
   return (
     <Card className="mb-4 bg-white/80 backdrop-blur-sm border-emerald-100 shadow-md hover:shadow-lg transition-shadow duration-200">
       <CardHeader className="pb-2 border-b border-emerald-100">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <CardTitle className="text-lg font-semibold text-emerald-800">
-            Nutrition Insights
-          </CardTitle>
+        <div className="flex flex-col space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <CardTitle className="text-lg font-semibold text-emerald-800">
+              Nutrition Insights
+            </CardTitle>
+            
+            <Tabs defaultValue="calories" value={chartType} onValueChange={setChartType}>
+              <TabsList className="bg-emerald-50 border border-emerald-100">
+                <TabsTrigger 
+                  value="calories" 
+                  className="data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-900 text-emerald-700"
+                >
+                  Calories
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="macros" 
+                  className="data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-900 text-emerald-700"
+                >
+                  Macros
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
           
-          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <QuickDateSelector onSelect={handleDateSelect} />
+            
             <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -207,23 +293,6 @@ const NutritionChart = ({ nutritionData, onDateRangeChange, isLoading }) => {
                 />
               </PopoverContent>
             </Popover>
-
-            <Tabs defaultValue="calories" value={chartType} onValueChange={setChartType}>
-              <TabsList className="bg-emerald-50 border border-emerald-100">
-                <TabsTrigger 
-                  value="calories" 
-                  className="data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-900 text-emerald-700"
-                >
-                  Calories
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="macros" 
-                  className="data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-900 text-emerald-700"
-                >
-                  Macros
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
           </div>
         </div>
       </CardHeader>

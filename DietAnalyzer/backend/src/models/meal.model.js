@@ -21,6 +21,12 @@ const nutritionInfoSchema = new mongoose.Schema({
   macroNutrientFacts: {
     type: String,
     required: true
+  },
+  ingredientAnalysis: {
+    mainIngredients: [String],
+    nutritionalHighlights: String,
+    dietaryConsiderations: String,
+    healthBenefits: String
   }
 });
 

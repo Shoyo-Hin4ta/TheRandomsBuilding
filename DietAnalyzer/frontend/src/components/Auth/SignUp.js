@@ -14,7 +14,8 @@ const SignUp = () => {
     email: '',
     password: '',
     firstName: '',
-    lastName: ''
+    lastName: '',
+    age: ''
   };
 
   const { formData, success, handleChange, handleSubmit } = useAuthForm(initialState, '/users/signup');
@@ -101,6 +102,21 @@ const SignUp = () => {
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm"
             />
           </div>
+
+          <div>
+            <input
+              type="number"
+              name="age"
+              value={formData.age}
+              onChange={handleChange}
+              placeholder="Age"
+              min="13"
+              max="120"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm"
+            />
+            <p className="mt-2 text-sm text-emerald-600">Must be at least 13 years old</p>
+          </div>
+
         </div>
 
         <button 

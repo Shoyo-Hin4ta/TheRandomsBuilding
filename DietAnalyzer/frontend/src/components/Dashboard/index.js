@@ -10,14 +10,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import MealAnalysisDialog from '../MealLogging/MealComponents/MealAnalysisDialog';
-import NutritionChart from './NutritionChart';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { Activity, Utensils } from 'lucide-react';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 export default function Dashboard() {
-
   const [selectedMeal, setSelectedMeal] = useState(null);
-
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [mealsByType, setMealsByType] = useState({
     breakfast: [],
@@ -30,67 +29,17 @@ export default function Dashboard() {
   const currentUser = useSelector(selectCurrentUser);
   const { toast } = useToast();
 
-
-  const [nutritionData, setNutritionData] = useState([]);
-  const [isChartLoading, setIsChartLoading] = useState(false);
-  
-  const fetchNutritionData = async (dateRange) => {
-    if (!dateRange?.from || !dateRange?.to) {
-      console.log('Invalid date range:', dateRange);
-      return;
-    }
-  
-    setIsChartLoading(true);
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}/meals/nutrition`,
-        { 
-          params: {
-            startDate: dateRange.from.toISOString(),
-            endDate: dateRange.to.toISOString()
-          },
-          withCredentials: true 
-        }
-      );
-      setNutritionData(response.data.data);
-    } catch (error) {
-      console.error('Error fetching nutrition data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch nutrition data",
-        variant: "destructive",
-      });
-      setNutritionData([]); // Reset data on error
-    } finally {
-      setIsChartLoading(false);
-    }
-  };
-  
-  useEffect(() => {
-    if (currentUser) {
-      const today = new Date();
-      fetchNutritionData({
-        from: today,
-        to: today
-      });
-    }
-  }, [currentUser]);
-
   const fetchMeals = async () => {
     if (!currentUser) return;
     
     setIsLoading(true);
     setError(null);
     try {
-      const formattedDate = selectedDate.toISOString().split('T')[0];
-
       const response = await axios.get(
         `${API_BASE_URL}/meals/date/${selectedDate.toISOString().split('T')[0]}`,
         { withCredentials: true }
       );
-      console.log('Fetched meals:', response.data);
 
-      // Group meals by type
       const grouped = response.data.data.reduce((acc, meal) => {
         if (!acc[meal.mealType]) {
           acc[meal.mealType] = [];
@@ -103,9 +52,6 @@ export default function Dashboard() {
         dinner: [],
         snack: []
       });
-
-      console.log('Grouped meals:', grouped);  // Debug log
-
       
       setMealsByType(grouped);
     } catch (error) {
@@ -130,7 +76,6 @@ export default function Dashboard() {
         description: "Meal deleted successfully",
       });
       
-      // Refresh meals after deletion
       fetchMeals();
     } catch (error) {
       toast({
@@ -147,6 +92,105 @@ export default function Dashboard() {
     carbohydrates: meals.reduce((sum, meal) => sum + (meal.nutritionInfo?.carbohydrates || 0), 0),
     fat: meals.reduce((sum, meal) => sum + (meal.nutritionInfo?.fat || 0), 0)
   });
+
+  const getDailyTotals = () => {
+    const allMeals = Object.values(mealsByType).flat();
+    return getTotalNutrients(allMeals);
+  };
+
+  const renderDailySummary = () => {
+    const totals = getDailyTotals();
+    const macroData = [
+      { name: 'Protein', value: totals.protein, color: '#059669' },
+      { name: 'Carbs', value: totals.carbohydrates, color: '#10b981' },
+      { name: 'Fat', value: totals.fat, color: '#34d399' }
+    ];
+
+    return (
+      <Card className="mb-6 bg-white/80 backdrop-blur-sm border-emerald-100 shadow-md">
+        <CardHeader className="pb-2 border-b border-emerald-100">
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-lg font-semibold text-emerald-800">
+              Daily Summary
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Activity className="h-4 w-4 text-emerald-600" />
+              <span className="font-medium text-emerald-700">{totals.calories} cal</span>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={macroData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={2}
+                  >
+                    {macroData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-white/95 border border-emerald-200 rounded-lg p-2 shadow-lg">
+                            <p className="text-sm text-emerald-800">
+                              {payload[0].name}: {payload[0].value.toFixed(1)}g
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Legend
+                    verticalAlign="middle"
+                    align="right"
+                    layout="vertical"
+                    formatter={(value, entry) => (
+                      <span className="text-sm text-emerald-700">{value}</span>
+                    )}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex flex-col justify-center space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                {Object.entries(mealsByType).map(([type, meals]) => {
+                  const mealTotal = getTotalNutrients(meals);
+                  return (
+                    <div 
+                      key={type}
+                      className="bg-emerald-50/50 rounded-lg p-3 border border-emerald-100"
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <Utensils className="h-4 w-4 text-emerald-600" />
+                        <span className="text-sm font-medium text-emerald-800 capitalize">
+                          {type}
+                        </span>
+                      </div>
+                      <p className="text-sm text-emerald-600">
+                        {mealTotal.calories} cal
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   const renderMealTypeCard = (type, meals) => {
     const totals = getTotalNutrients(meals);
@@ -169,7 +213,9 @@ export default function Dashboard() {
       <Card className="mb-4 bg-white/80 backdrop-blur-sm border-emerald-100 shadow-md hover:shadow-lg transition-shadow duration-200" key={type}>
         <CardHeader className="pb-2 border-b border-emerald-100">
           <div className="flex justify-between items-center">
-            <CardTitle className="text-lg font-semibold text-emerald-800">{formattedType}</CardTitle>
+            <CardTitle className="text-lg font-semibold text-emerald-800">
+              {formattedType}
+            </CardTitle>
             <Badge 
               variant="secondary" 
               className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors"
@@ -263,13 +309,7 @@ export default function Dashboard() {
           {currentUser?.firstName}'s Dashboard
         </h1>
 
-        <div className="grid gap-4 mb-6">
-          <NutritionChart 
-            nutritionData={nutritionData}
-            onDateRangeChange={fetchNutritionData}
-            isLoading={isChartLoading}
-          />
-        </div>
+        {renderDailySummary()}
         
         {Object.entries(mealsByType).map(([type, meals]) => 
           renderMealTypeCard(type, meals)
