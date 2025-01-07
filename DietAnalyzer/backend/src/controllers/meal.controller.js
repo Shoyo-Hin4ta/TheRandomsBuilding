@@ -1,10 +1,12 @@
-// src/controllers/meal.controller.js
 import { Meal } from "../models/meal.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import uploadOnCDN from "../utils/cloudinary.js";
 import OpenAI from 'openai';
 import fs from 'fs/promises';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
