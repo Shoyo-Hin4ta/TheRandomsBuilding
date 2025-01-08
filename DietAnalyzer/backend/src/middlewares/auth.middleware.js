@@ -8,11 +8,7 @@ dotenv.config();
 
 export const verifyJWT = async(req, res, next) => {
     try {
-        let token = req.cookies?.accessToken || req.header("Authorization");
-        
-        if (token?.startsWith("Bearer ")) {
-            token = token.substring(7);
-        }
+        const token = req.header("Authorization")?.replace("Bearer ", "");
     
         if(!token) {
             throw new ApiError(401, "Unauthorized Request");
@@ -26,7 +22,7 @@ export const verifyJWT = async(req, res, next) => {
             }
 
             const user = await User.findById(decodedToken._id)
-                                 .select("-password -refreshToken");
+                                 .select("-password");
         
             if(!user) {
                 throw new ApiError(401, "User not found");
@@ -35,20 +31,9 @@ export const verifyJWT = async(req, res, next) => {
             req.user = user;
             next();
         } catch (err) {
-            if (err.name === 'JsonWebTokenError') {
-                throw new ApiError(401, "Invalid access token");
-            }
-            if (err.name === 'TokenExpiredError') {
-                throw new ApiError(401, "Access token expired");
-            }
-            throw err;
+            throw new ApiError(401, "Invalid access token");
         }
     } catch (error) {
-        return res.status(error.statusCode || 500).json({
-            statusCode: error.statusCode || 500,
-            message: error.message || "Authentication failed",
-            success: false,
-            data: null
-        });
+        throw new ApiError(error.statusCode || 401, error.message || "Invalid access token");
     }
 }

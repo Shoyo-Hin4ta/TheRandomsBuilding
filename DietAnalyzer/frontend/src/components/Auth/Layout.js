@@ -16,22 +16,25 @@ const AuthLayout = ({ children }) => {
   const location = useLocation();
   const dispatch = useDispatch();
   const currentUser = useSelector(state => state.user.currentUser);
+  const accessToken = useSelector(state => state.user.accessToken);
 
   const handleLogout = async () => {
     try {
-      const response = await axios.post(
+      await axios.post(
         `${process.env.REACT_APP_API_BASE_URL}/users/logout`,
         {},
-        { withCredentials: true }
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        }
       );
-
-      if (response.data.success) {
-        dispatch(clearUser());
-        navigate('/signin');
-      }
+      dispatch(clearUser());
+      navigate('/signin');
     } catch (error) {
       console.error('Logout failed:', error);
-      alert('Failed to logout. Please try again.');
+      dispatch(clearUser());
+      navigate('/signin');
     }
   };
 

@@ -28,6 +28,7 @@ const GenerateReport = () => {
   const [diseases, setDiseases] = useState([]);
   const [loading, setLoading] = useState(false);
   const currentUser = useSelector(selectCurrentUser);
+  const accessToken = useSelector(state => state.user.accessToken);
 
   const diseaseOptions = [
     { id: 'diabetes', label: 'Diabetes' },
@@ -233,7 +234,11 @@ const GenerateReport = () => {
           diseases,
           timeFrame
         },
-        { withCredentials: true }
+        {  
+          headers: {
+              Authorization: `Bearer ${accessToken}`
+          }
+        }
       );
 
       if (response.data.success) {

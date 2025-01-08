@@ -4,17 +4,21 @@ import { useToast } from '@/hooks/use-toast';
 import axios from 'axios';
 import RecipeCard from '../RecipeCard';
 import { UtensilsCrossed } from 'lucide-react';
+import { useSelector } from 'react-redux';
 
 const AllRecipes = () => {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const accessToken = useSelector(state => state.user.accessToken);
 
   useEffect(() => {
     const fetchRecipes = async () => {
       try {
         const response = await axios.get('http://localhost:8000/api/recipes/all', {
-          withCredentials: true
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
         });
         setRecipes(response.data.data);
       } catch (error) {

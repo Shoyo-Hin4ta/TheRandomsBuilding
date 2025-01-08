@@ -4,7 +4,8 @@ const initialState = {
   currentUser: null,
   isAuthenticated: false,
   loading: false,
-  error: null
+  error: null,
+  accessToken: null  // Add this
 };
 
 const userSlice = createSlice({
@@ -12,8 +13,9 @@ const userSlice = createSlice({
   initialState,
   reducers: {
     setUser: (state, action) => {
-      state.currentUser = action.payload;
-      state.isAuthenticated = action.payload !== null;
+      state.currentUser = action.payload.user;
+      state.accessToken = action.payload.accessToken;  // Store token
+      state.isAuthenticated = true;
       state.error = null;
     },
     setLoading: (state, action) => {
@@ -25,6 +27,7 @@ const userSlice = createSlice({
     },
     clearUser: (state) => {
       state.currentUser = null;
+      state.accessToken = null;  // Clear token
       state.isAuthenticated = false;
       state.error = null;
     }

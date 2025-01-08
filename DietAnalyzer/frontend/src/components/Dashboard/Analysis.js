@@ -14,6 +14,7 @@ const Analysis = () => {
   const [error, setError] = useState(null);
   const currentUser = useSelector(selectCurrentUser);
   const { toast } = useToast();
+  const accessToken = useSelector(state => state.user.accessToken);
 
   const fetchNutritionData = async (dateRange) => {
     if (!dateRange?.from || !dateRange?.to) {
@@ -32,7 +33,10 @@ const Analysis = () => {
             startDate: dateRange.from.toISOString(),
             endDate: dateRange.to.toISOString()
           },
-          withCredentials: true 
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+
         }
       );
       setNutritionData(response.data.data);

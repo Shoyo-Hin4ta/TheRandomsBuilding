@@ -1,30 +1,20 @@
 // src/services/mealService.js
 import axios from 'axios';
+import appStore from '@/store/appStore';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
-// const dataURLtoFile = (dataurl, filename) => {
-//     if (!dataurl) return null;
-    
-//     const arr = dataurl.split(',');
-//     if (arr.length < 2) return null;
-    
-//     const mime = arr[0].match(/:(.*?);/)[1];
-//     const bstr = atob(arr[1]);
-//     let n = bstr.length;
-//     const u8arr = new Uint8Array(n);
-    
-//     while(n--) {
-//         u8arr[n] = bstr.charCodeAt(n);
-//     }
-    
-//     return new File([u8arr], filename, { type: mime });
-// };
+// Helper function to get current token
+const getToken = () => {
+  const state = appStore.getState();
+  return state.user.accessToken;
+};
 
 export const mealService = {
     async addMeal(mealData) {
         try {
             console.log('mealService.addMeal received:', mealData);
+            const token = getToken();
 
             // If ingredients are present, ensure they're in the correct format
             if (mealData.ingredients) {
@@ -41,9 +31,8 @@ export const mealService = {
 
                 const response = await axios.post(`${API_BASE_URL}/meals`, formattedData, {
                     headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    withCredentials: true
+                        Authorization: `Bearer ${token}`
+                    }
                 });
 
                 return response.data.data;
@@ -70,14 +59,19 @@ export const mealService = {
 
                 const response = await axios.post(`${API_BASE_URL}/meals`, formData, {
                     headers: {
-                        'Content-Type': 'multipart/form-data'
-                    },
-                    withCredentials: true
+                        'Content-Type': 'multipart/form-data',
+                        Authorization: `Bearer ${token}`
+                    }
                 });
 
                 return response.data.data;
             }
         } catch (error) {
+            if (error.response?.status === 401) {
+                // Optionally dispatch logout action here
+                // store.dispatch(clearUser());
+                throw new Error('Authentication expired');
+            }
             console.error('Error adding meal:', error.response?.data || error.message);
             throw error;
         }
@@ -85,13 +79,54 @@ export const mealService = {
 
     async getMealsByDate(date) {
         try {
+            const token = getToken();
             const formattedDate = date.toISOString().split('T')[0];
             const response = await axios.get(`${API_BASE_URL}/meals/date/${formattedDate}`, {
-                withCredentials: true
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
             });
-            return response.data;  // Changed to return full response
+            return response.data;
         } catch (error) {
+            if (error.response?.status === 401) {
+                throw new Error('Authentication expired');
+            }
             console.error('Error getting meals:', error.response?.data || error.message);
+            throw error;
+        }
+    },
+
+    // You might want to add other methods
+    async updateMeal(id, mealData) {
+        try {
+            const token = getToken();
+            const response = await axios.put(`${API_BASE_URL}/meals/${id}`, mealData, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            return response.data;
+        } catch (error) {
+            if (error.response?.status === 401) {
+                throw new Error('Authentication expired');
+            }
+            throw error;
+        }
+    },
+
+    async deleteMeal(id) {
+        try {
+            const token = getToken();
+            const response = await axios.delete(`${API_BASE_URL}/meals/${id}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            return response.data;
+        } catch (error) {
+            if (error.response?.status === 401) {
+                throw new Error('Authentication expired');
+            }
             throw error;
         }
     }

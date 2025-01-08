@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
   const currentUser = useSelector(selectCurrentUser);
   const { toast } = useToast();
+  const accessToken = useSelector(state => state.user.accessToken);
 
   const fetchMeals = async () => {
     if (!currentUser) return;
@@ -37,7 +38,11 @@ export default function Dashboard() {
     try {
       const response = await axios.get(
         `${API_BASE_URL}/meals/date/${selectedDate.toISOString().split('T')[0]}`,
-        { withCredentials: true }
+        {  
+          headers: {
+              Authorization: `Bearer ${accessToken}`
+          }
+        }
       );
 
       const grouped = response.data.data.reduce((acc, meal) => {

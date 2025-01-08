@@ -28,12 +28,12 @@ const useAuthForm = (initialState, endpoint) => {
     try {
       const response = await axios.post(
         `${process.env.REACT_APP_API_BASE_URL}${endpoint}`,
-        formData,
-        { withCredentials: true }
+        formData
       );
 
       if (endpoint === '/users/signin') {
-        dispatch(setUser(response.data.data.user));
+        const { user, accessToken } = response.data.data;
+        dispatch(setUser({ user, accessToken }));
         setSuccess('Sign in successful! Redirecting...');
       } else {
         setSuccess(response.data.message || 'Account created successfully! You can now sign in.');

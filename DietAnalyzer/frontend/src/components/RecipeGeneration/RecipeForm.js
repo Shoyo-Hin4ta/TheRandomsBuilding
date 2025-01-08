@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import RecipeCard from './RecipeCard';
 import IngredientList from './IngredientList';
 import axios from 'axios';
+import { useSelector } from 'react-redux';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
@@ -27,6 +28,7 @@ const RecipeForm = ({ defaultMode = 'neither' }) => {
   const [lastGeneratedIngredients, setLastGeneratedIngredients] = useState([]);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const accessToken = useSelector(state => state.user.accessToken);
 
   const dietaryOptions = [
     { id: 'high-protein', label: 'High Protein' },
@@ -207,9 +209,8 @@ const RecipeForm = ({ defaultMode = 'neither' }) => {
       const formData = { preferences };
       
       const response = await axios.post(`${API_BASE_URL}/recipes/generate`, formData, {
-        withCredentials: true,
         headers: {
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${accessToken}`
         }
       });
       

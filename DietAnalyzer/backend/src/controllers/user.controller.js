@@ -182,7 +182,9 @@ export const signIn = async (req, res) => {
       .cookie("refreshToken", refreshToken, options)
       .json(new ApiResponse(
         200,
-        { user: loggedInUser },
+        { user: loggedInUser,
+          accessToken
+         },
         "Sign in successful! Redirecting..."
       ));
   } catch (error) {
