@@ -171,9 +171,11 @@ export const signIn = async (req, res) => {
 
     const options = {
       httpOnly: true,
-      secure: true
+      secure: true,
+      sameSite: 'none',
+      path: '/',
     };
-
+    
     return res
       .status(200)
       .cookie("accessToken", accessToken, options)
@@ -183,7 +185,6 @@ export const signIn = async (req, res) => {
         { user: loggedInUser },
         "Sign in successful! Redirecting..."
       ));
-
   } catch (error) {
     console.error("SignIn Error:", error);
     const statusCode = error instanceof ApiError ? error.statusCode : 500;
@@ -209,7 +210,9 @@ export const logout = async (req, res) => {
 
     const options = {
       httpOnly: true,
-      secure: true
+      secure: true,
+      sameSite: 'none',
+      path: '/',
     };
 
     return res
@@ -254,7 +257,9 @@ export const refreshAccessToken = async (req, res) => {
 
       const options = {
         httpOnly: true,
-        secure: true
+        secure: true,
+        sameSite: 'none',
+        path: '/',
       };
 
       return res
