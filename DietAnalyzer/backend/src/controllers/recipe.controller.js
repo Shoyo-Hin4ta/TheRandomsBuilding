@@ -176,7 +176,7 @@ export const generateRecipes = async (req, res, next) => {
 
     try {
       const parsedContent = JSON.parse(completion.choices[0].message.content);
-      console.log('Parsed OpenAI response:', parsedContent);
+      // console.log('Parsed OpenAI response:', parsedContent);
 
       if (!parsedContent.recipes || !Array.isArray(parsedContent.recipes)) {
         throw new Error('Invalid response format from OpenAI');

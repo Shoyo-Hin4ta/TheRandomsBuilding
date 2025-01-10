@@ -18,7 +18,7 @@ const Analysis = () => {
 
   const fetchNutritionData = async (dateRange) => {
     if (!dateRange?.from || !dateRange?.to) {
-      console.log('Invalid date range:', dateRange);
+      // console.log('Invalid date range:', dateRange);
       return;
     }
   

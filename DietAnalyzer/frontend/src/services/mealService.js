@@ -13,7 +13,7 @@ const getToken = () => {
 export const mealService = {
     async addMeal(mealData) {
         try {
-            console.log('mealService.addMeal received:', mealData);
+            // console.log('mealService.addMeal received:', mealData);
             const token = getToken();
 
             // If ingredients are present, ensure they're in the correct format
@@ -27,7 +27,7 @@ export const mealService = {
                         mealData.date.toISOString() : mealData.date
                 };
 
-                console.log('Sending formatted data to backend:', formattedData);
+                // console.log('Sending formatted data to backend:', formattedData);
 
                 const response = await axios.post(`${API_BASE_URL}/meals`, formattedData, {
                     headers: {
@@ -52,10 +52,10 @@ export const mealService = {
                     }
                 });
 
-                console.log('FormData entries:');
-                for (let pair of formData.entries()) {
-                    console.log(pair[0], pair[1]);
-                }
+                // console.log('FormData entries:');
+                // for (let pair of formData.entries()) {
+                //     console.log(pair[0], pair[1]);
+                // }
 
                 const response = await axios.post(`${API_BASE_URL}/meals`, formData, {
                     headers: {

@@ -15,19 +15,16 @@ const openai = new OpenAI({
 
 const base64ToFile = async (base64String, filename) => {
   try {
-    console.log("Starting base64ToFile conversion...");
+    // console.log("Starting base64ToFile conversion...");
     const base64Data = base64String.replace(/^data:image\/\w+;base64,/, '');
     
     const buffer = Buffer.from(base64Data, 'base64');
-    console.log("Buffer created successfully");
+    // console.log("Buffer created successfully");
     
     const tempPath = `/tmp/${filename}`;
-    console.log("Temp path:", tempPath);
+    // console.log("Temp path:", tempPath);
 
-    await fs.mkdir('/tmp', { recursive: true })
-      .then(() => console.log("Directory created/verified"))
-      .catch(err => console.error("mkdir error:", err));
-    
+    // Remove the mkdir operation since /tmp should already exist
     await fs.writeFile(tempPath, buffer)
       .then(() => console.log("File written successfully"))
       .catch(err => console.error("writeFile error:", err));
@@ -46,19 +43,19 @@ const base64ToFile = async (base64String, filename) => {
 
 const analyzeWithGPT = async (imagePath, size = 'M') => {
   try {
-    console.log("Starting GPT analysis with path:", imagePath);
+    // console.log("Starting GPT analysis with path:", imagePath);
     
     const imageBuffer = await fs.readFile(imagePath)
       .catch(err => {
         console.error("readFile error:", err);
         throw err;
       });
-    console.log("Image read successfully");
+    // console.log("Image read successfully");
 
     const contentType = 'image/jpeg';
     const base64Image = Buffer.from(imageBuffer).toString('base64');
     const dataUrl = `data:${contentType};base64,${base64Image}`;
-    console.log("Image converted to data URL");
+    // console.log("Image converted to data URL");
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -332,7 +329,7 @@ const generateMealName = async (mealType, userId, date, existingMeals = null) =>
 export const addMeal = async (req, res) => {
   try {
     const { body } = req;
-    console.log("1. Received request body:", body);
+    // console.log("1. Received request body:", body);
 
     // Get existing meals for the day
     const today = new Date(body.date);
@@ -418,7 +415,7 @@ export const addMeal = async (req, res) => {
       throw new ApiError(400, "Please provide image, description, or ingredients");
     }
 
-    console.log("3. Final mealData before DB save:", mealData);
+    // console.log("3. Final mealData before DB save:", mealData);
     const meal = await Meal.create(mealData);
 
     return res.status(201).json(
@@ -449,7 +446,7 @@ export const getMealsByDate = async (req, res) => {
     const endDate = new Date(date);
     endDate.setUTCHours(23, 59, 59, 999);
 
-    console.log('Querying meals between:', startDate, 'and', endDate); // Debug log
+    // console.log('Querying meals between:', startDate, 'and', endDate); // Debug log
 
     const meals = await Meal.find({
       user: req.user._id,
@@ -459,7 +456,7 @@ export const getMealsByDate = async (req, res) => {
       }
     }).sort({ mealType: 1 });
 
-    console.log('Found meals:', meals); // Debug log
+    // console.log('Found meals:', meals);
 
     return res.status(200).json(
       new ApiResponse(200, meals, "Meals retrieved successfully")

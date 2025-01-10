@@ -18,7 +18,7 @@ const uploadOnCDN = async (localFile) => {
             resource_type: "auto"
         })
 
-        console.log("File uploaded succesfully", response.url);
+        // console.log("File uploaded succesfully", response.url);
         return response
     } catch (error) {
         //removing the locally saved temp file as operation got failed.

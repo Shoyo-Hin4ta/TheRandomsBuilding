@@ -28,7 +28,7 @@ const MealLogging = () => {
         mealType: mealType, // Explicitly set mealType from component state
         date: selectedDate
       };
-      console.log('Submitting meal data:', mealData); // Debug log
+      // console.log('Submitting meal data:', mealData); // Debug log
       await mealService.addMeal(mealData);
 
       // Reset form state
