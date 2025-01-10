@@ -1,13 +1,24 @@
 import connectDB from "./db/index.js";
 import { app } from "./app.js";
-
 import dotenv from 'dotenv';
+import fs from 'fs/promises';
 
 dotenv.config();
 
+const ensureTmpDirectory = async () => {
+  try {
+    await fs.access('/tmp');
+  } catch {
+    await fs.mkdir('/tmp', { recursive: true });
+  }
+};
+
 connectDB()
-.then(() => {
+.then(async () => {  // Make this callback async
     try {
+        // Ensure tmp directory exists
+        await ensureTmpDirectory();
+        
         app.on("error", (error)=>{
             console.log(error);
             throw error;
