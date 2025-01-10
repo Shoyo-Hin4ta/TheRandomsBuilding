@@ -6,7 +6,12 @@ import RecipeCard from '../RecipeCard';
 import { UtensilsCrossed } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
+
 const AllRecipes = () => {
+
+
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -15,7 +20,8 @@ const AllRecipes = () => {
   useEffect(() => {
     const fetchRecipes = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/api/recipes/all', {
+        const response = await axios.get(
+          `${API_BASE_URL}/recipes/all`, {
           headers: {
             Authorization: `Bearer ${accessToken}`
           }
