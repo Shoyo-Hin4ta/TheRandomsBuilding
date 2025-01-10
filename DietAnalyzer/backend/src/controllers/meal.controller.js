@@ -21,10 +21,11 @@ const base64ToFile = async (base64String, filename) => {
   const buffer = Buffer.from(base64Data, 'base64');
   
   // Create temporary file path
-  const tempPath = `./temp/${filename}`;
-  
+  // const tempPath = `./temp/${filename}`;
+  const tempPath = `/tmp/${filename}`;
+
   // Ensure temp directory exists
-  await fs.mkdir('./temp', { recursive: true }).catch(console.error);
+  // await fs.mkdir('./temp', { recursive: true }).catch(console.error);
   
   // Write buffer to file
   await fs.writeFile(tempPath, buffer);
