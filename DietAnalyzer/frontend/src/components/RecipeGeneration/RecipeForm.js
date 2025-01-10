@@ -28,6 +28,7 @@ const RecipeForm = ({ defaultMode = 'neither' }) => {
   const [lastGeneratedIngredients, setLastGeneratedIngredients] = useState([]);
   const { toast } = useToast();
   const navigate = useNavigate();
+  
   const accessToken = useSelector(state => state.user.accessToken);
 
   const dietaryOptions = [

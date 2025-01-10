@@ -171,7 +171,8 @@ export const generateRecipes = async (req, res, next) => {
             additionalProperties: false
           }
         }
-      }
+      },
+      timeout: 50000
     });
 
     try {
