@@ -166,83 +166,77 @@ const RecipeForm = ({ defaultMode = 'neither' }) => {
       return;
     }
   
-    // Check if anything has changed that would warrant new recipes
-    const shouldGenerateNewRecipes = () => {
-      // If this is the first recipe generation
-      if (allRecipes.length === 0) {
-        return true;
-      }
+    setLoading(true);
+    
+    const axiosConfig = {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      },
+      timeout: 120000, // 2 minute timeout
+    };
   
-      const lastRecipeSet = allRecipes[allRecipes.length - 1];
-      const lastPreferences = lastRecipeSet.preferences;
+    const delay = (attemptNumber) => {
+      const waitTime = Math.min(1000 * Math.pow(2, attemptNumber), 10000);
+      return new Promise(resolve => setTimeout(resolve, waitTime));
+    };
   
-      // Compare current state with last generation
-      const preferencesChanged = 
-        JSON.stringify({
+    const maxRetries = 3;
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const preferences = {
           dietaryNeeds: usePreferences ? selectedDietary : [],
           healthCondition: healthCondition.trim(),
           activityLevel: usePreferences ? activityLevel : '',
           ingredients: useIngredients ? ingredients : []
-        }) !== JSON.stringify(lastPreferences);
-  
-      return preferencesChanged;
-    };
-  
-    if (!shouldGenerateNewRecipes()) {
-      toast({
-        title: "No Changes",
-        description: "Please modify your ingredients or preferences before generating new recipes",
-        variant: "warning",
-      });
-      return;
-    }
-  
-    setLoading(true);
-    
-    try {
-      const preferences = {
-        dietaryNeeds: usePreferences ? selectedDietary : [],
-        healthCondition: healthCondition.trim(),
-        activityLevel: usePreferences ? activityLevel : '',
-        ingredients: useIngredients ? ingredients : []
-      };
-  
-      const formData = { preferences };
-      
-      const response = await axios.post(`${API_BASE_URL}/recipes/generate`, formData, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`
-        }
-      });
-      
-      if (response.data.data.recipes) {
-        const newRecipes = {
-          timestamp: new Date().toISOString(),
-          recipes: response.data.data.recipes,
-          preferences: preferences,
-          ingredientsUsed: [...ingredients]
         };
+  
+        const formData = { preferences };
         
-        setAllRecipes(prev => [...prev, newRecipes]);
-        resetForm();
+        const response = await axios.post(
+          `${API_BASE_URL}/recipes/generate`, 
+          formData, 
+          axiosConfig
+        );
         
-        toast({
-          title: "Success",
-          description: "Recipes generated successfully",
-        });
-      } else {
-        throw new Error("No recipes returned from server");
+        if (response.data.data.recipes) {
+          const newRecipes = {
+            timestamp: new Date().toISOString(),
+            recipes: response.data.data.recipes,
+            preferences: preferences,
+            ingredientsUsed: [...ingredients]
+          };
+          
+          setAllRecipes(prev => [...prev, newRecipes]);
+          resetForm();
+          
+          toast({
+            title: "Success",
+            description: "Recipes generated successfully",
+          });
+          break; // Exit on success
+        }
+      } catch (err) {
+        console.error('Attempt', attempt + 1, 'failed:', err);
+        
+        // If it's our last attempt or not a timeout error
+        if (attempt === maxRetries - 1 || 
+            (err.response && err.response.status !== 504)) {
+          console.error('Error details:', err.response?.data || err);
+          toast({
+            title: "Error",
+            description: "Failed to generate recipes. Please try again later.",
+            variant: "destructive",
+          });
+          break;
+        }
+        
+        // Wait before next retry using exponential backoff
+        await delay(attempt);
       }
-    } catch (err) {
-      console.error('Error details:', err.response?.data || err);
-      toast({
-        title: "Error",
-        description: err.response?.data?.message || "Failed to generate recipes",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
     }
+    
+    setLoading(false);
   };
 
 
