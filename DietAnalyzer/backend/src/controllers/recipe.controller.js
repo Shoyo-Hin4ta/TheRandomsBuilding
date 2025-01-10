@@ -94,92 +94,85 @@ export const generateRecipes = async (req, res, next) => {
       throw new ApiError(400, "Missing required field: preferences");
     }
 
-    const completion = await Promise.race([
-      openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: "You are a professional chef and nutritionist who creates detailed, healthy recipes with exact measurements, taking into account dietary needs, health conditions, and available ingredients. You must always generate exactly 3 unique recipes."
-          },
-          {
-            role: "user",
-            content: generateRecipesPrompt(preferences)
-          }
-        ],
-        response_format: {
-          type: "json_schema",
-          json_schema: {
-            name: "recipe_schema",
-            schema: {
-              type: "object",
-              properties: {
-                recipes: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      name: {
-                        type: "string",
-                        description: "Name of the recipe"
-                      },
-                      directions: {
-                        type: "string",
-                        description: "Detailed cooking instructions with exact measurements"
-                      },
-                      additionalIngredients: {
-                        type: "array",
-                        items: { 
-                          type: "object",
-                          properties: {
-                            name: {
-                              type: "string",
-                              description: "Name of the additional ingredient"
-                            },
-                            amount: {
-                              type: "string",
-                              description: "Required amount with unit"
-                            },
-                            reason: {
-                              type: "string",
-                              description: "Why this ingredient is needed"
-                            }
-                          },
-                          required: ["name", "amount"]
-                        },
-                        description: "Additional ingredients needed with amounts"
-                      },
-                      nutritionalInfo: {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are a professional chef and nutritionist who creates detailed, healthy recipes with exact measurements, taking into account dietary needs, health conditions, and available ingredients. You must always generate exactly 3 unique recipes."
+        },
+        {
+          role: "user",
+          content: generateRecipesPrompt(preferences)
+        }
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "recipe_schema",
+          schema: {
+            type: "object",
+            properties: {
+              recipes: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: {
+                      type: "string",
+                      description: "Name of the recipe"
+                    },
+                    directions: {
+                      type: "string",
+                      description: "Detailed cooking instructions with exact measurements"
+                    },
+                    additionalIngredients: {
+                      type: "array",
+                      items: { 
                         type: "object",
                         properties: {
-                          calories: { type: "number" },
-                          protein: { type: "string" },
-                          carbs: { type: "string" },
-                          fat: { type: "string" },
-                          servingSize: { type: "string" }
+                          name: {
+                            type: "string",
+                            description: "Name of the additional ingredient"
+                          },
+                          amount: {
+                            type: "string",
+                            description: "Required amount with unit"
+                          },
+                          reason: {
+                            type: "string",
+                            description: "Why this ingredient is needed"
+                          }
                         },
-                        required: ["calories", "servingSize"]
-                      }
+                        required: ["name", "amount"]
+                      },
+                      description: "Additional ingredients needed with amounts"
                     },
-                    required: ["name", "directions", "additionalIngredients", "nutritionalInfo"],
-                    additionalProperties: false
+                    nutritionalInfo: {
+                      type: "object",
+                      properties: {
+                        calories: { type: "number" },
+                        protein: { type: "string" },
+                        carbs: { type: "string" },
+                        fat: { type: "string" },
+                        servingSize: { type: "string" }
+                      },
+                      required: ["calories", "servingSize"]
+                    }
                   },
-                  minItems: 3,
-                  maxItems: 3
-                }
-              },
-              required: ["recipes"],
-              additionalProperties: false
-            }
+                  required: ["name", "directions", "additionalIngredients", "nutritionalInfo"],
+                  additionalProperties: false
+                },
+                minItems: 3,
+                maxItems: 3
+              }
+            },
+            required: ["recipes"],
+            additionalProperties: false
           }
-        },
-        timeout: 100000,
-        temperature: 0.7
-      }),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('OpenAI timeout')), 100000)
-      )
-     ]);
+        }
+      }
+    });
 
     try {
       const parsedContent = JSON.parse(completion.choices[0].message.content);
