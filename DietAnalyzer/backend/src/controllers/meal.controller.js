@@ -14,31 +14,51 @@ const openai = new OpenAI({
 
 
 const base64ToFile = async (base64String, filename) => {
-  // Remove data:image/jpeg;base64, prefix if present
-  const base64Data = base64String.replace(/^data:image\/\w+;base64,/, '');
-  
-  // Create buffer from base64
-  const buffer = Buffer.from(base64Data, 'base64');
-  
-  // Create temporary file path
-  // const tempPath = `./temp/${filename}`;
-  const tempPath = `/tmp/${filename}`;
+  try {
+    console.log("Starting base64ToFile conversion...");
+    const base64Data = base64String.replace(/^data:image\/\w+;base64,/, '');
+    
+    const buffer = Buffer.from(base64Data, 'base64');
+    console.log("Buffer created successfully");
+    
+    const tempPath = `/tmp/${filename}`;
+    console.log("Temp path:", tempPath);
 
-  // Ensure temp directory exists
-  await fs.mkdir('/tmp', { recursive: true }).catch(console.error);
-  
-  // Write buffer to file
-  await fs.writeFile(tempPath, buffer);
-  
-  return tempPath;
+    await fs.mkdir('/tmp', { recursive: true })
+      .then(() => console.log("Directory created/verified"))
+      .catch(err => console.error("mkdir error:", err));
+    
+    await fs.writeFile(tempPath, buffer)
+      .then(() => console.log("File written successfully"))
+      .catch(err => console.error("writeFile error:", err));
+    
+    // Verify file exists and is readable
+    await fs.access(tempPath)
+      .then(() => console.log("File is accessible"))
+      .catch(err => console.error("File access error:", err));
+
+    return tempPath;
+  } catch (error) {
+    console.error("Full error in base64ToFile:", error);
+    throw new ApiError(500, `Failed to process image: ${error.message}`);
+  }
 };
 
 const analyzeWithGPT = async (imagePath, size = 'M') => {
   try {
-    const imageBuffer = await fs.readFile(imagePath);
+    console.log("Starting GPT analysis with path:", imagePath);
+    
+    const imageBuffer = await fs.readFile(imagePath)
+      .catch(err => {
+        console.error("readFile error:", err);
+        throw err;
+      });
+    console.log("Image read successfully");
+
     const contentType = 'image/jpeg';
     const base64Image = Buffer.from(imageBuffer).toString('base64');
     const dataUrl = `data:${contentType};base64,${base64Image}`;
+    console.log("Image converted to data URL");
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -124,10 +144,16 @@ const analyzeWithGPT = async (imagePath, size = 'M') => {
         }
       }
     });
-
+    console.log("OpenAI API response received");
     return JSON.parse(response.choices[0].message.content);
+
   } catch (error) {
-    console.error("GPT Vision Analysis Error:", error);
+    console.error("Detailed GPT Analysis Error:", {
+      error: error.message,
+      stack: error.stack,
+      path: imagePath,
+      stage: error.stage || 'unknown'
+    });
     return {
       calories: 0,
       protein: 0,
