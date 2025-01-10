@@ -73,7 +73,9 @@ export default function Dashboard() {
   const handleDeleteMeal = async (mealId) => {
     try {
       await axios.delete(`${API_BASE_URL}/meals/${mealId}`, {
-        withCredentials: true
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
       });
       
       toast({
